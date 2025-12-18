@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -480,6 +480,8 @@
             cursor: pointer;
             transition: all 0.3s ease;
             min-width: 80px;
+            height: 38px;
+            box-sizing: border-box;
         }
 
         .btn-delete {
@@ -493,6 +495,8 @@
             cursor: pointer;
             transition: all 0.3s ease;
             min-width: 80px;
+            height: 38px;
+            box-sizing: border-box;
         }
 
         .btn-edit:hover, .btn-delete:hover {
@@ -587,23 +591,27 @@
             padding-right: 45px;
         }
 
-        .input-icon {
+        .input-icon,
+        button.input-icon,
+        button.input-icon[type="button"] {
             position: absolute;
             right: 12px;
             top: 50%;
             transform: translateY(-50%);
-            background: none;
-            border: none;
+            background: transparent !important;
+            background-color: transparent !important;
+            border: none !important;
             cursor: pointer;
-            padding: 6px;
-            border-radius: 50%;
+            padding: 6px !important;
+            border-radius: 50% !important;
             transition: all 0.3s ease;
-            color: #667eea;
+            color: #667eea !important;
             width: 32px;
             height: 32px;
             display: flex;
             align-items: center;
             justify-content: center;
+            font-weight: normal !important;
         }
 
         .input-icon svg {
@@ -612,19 +620,61 @@
             transition: all 0.3s ease;
         }
 
-        .input-icon:hover {
-            background-color: #f0f0f0;
-            color: #667eea;
+        .input-icon svg {
+            transform-origin: center;
+        }
+
+        .input-icon svg {
+            transform-origin: center;
+        }
+
+        .input-icon svg line {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-origin: center;
+        }
+
+        .input-icon svg line:nth-child(1) {
+            transform: rotate(0deg);
+        }
+
+        .input-icon svg line:nth-child(2) {
+            transform: rotate(0deg);
+        }
+
+        .input-icon:hover,
+        button.input-icon:hover,
+        button.input-icon[type="button"]:hover {
+            background: transparent !important;
+            background-color: transparent !important;
+            color: #dc3545 !important;
             transform: translateY(-50%) scale(1.1);
         }
 
-        .input-icon:hover svg {
-            stroke-width: 3;
+        .input-icon:hover svg line:nth-child(1) {
+            transform: rotate(140deg);
+            transform-origin: center;
         }
 
-        .input-icon:active {
+        .input-icon:hover svg line:nth-child(2) {
+            transform: rotate(-45deg);
+            transform-origin: center;
+        }
+
+        .input-icon:hover svg {
+            stroke-width: 2.5;
+        }
+
+        .input-icon:active,
+        button.input-icon:active,
+        button.input-icon[type="button"]:active,
+        .input-icon:focus,
+        button.input-icon:focus,
+        button.input-icon[type="button"]:focus {
             transform: translateY(-50%) scale(0.95);
-            background-color: #e0e0e0;
+            background: transparent !important;
+            background-color: transparent !important;
+            outline: none !important;
+            box-shadow: none !important;
         }
 
         /* Form modal styles */
@@ -827,6 +877,8 @@
             padding: 6px 10px;
             min-width: auto;
             font-size: 12px;
+            height: 38px;
+            box-sizing: border-box;
         }
 
         /* Quick list export/import actions */
@@ -909,6 +961,8 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s ease;
+            height: 38px;
+            box-sizing: border-box;
         }
         .btn-refresh-page:hover {
             transform: translateY(-1px);
@@ -930,6 +984,8 @@
             font-weight: 500;
             cursor: pointer;
             transition: all 0.3s ease;
+            height: 38px;
+            box-sizing: border-box;
         }
 
         .btn-print {
@@ -942,6 +998,8 @@
             font-weight: 500;
             cursor: pointer;
             transition: all 0.3s ease;
+            height: 38px;
+            box-sizing: border-box;
         }
         .kaca-controls .btn-print-now {
             background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
@@ -953,6 +1011,8 @@
             font-weight: 500;
             cursor: pointer;
             transition: all 0.3s ease;
+            height: 38px;
+            box-sizing: border-box;
         }
 
         .btn-remove-row {
@@ -1772,6 +1832,8 @@
             position: relative;
             overflow: hidden;
             box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+            height: 38px;
+            box-sizing: border-box;
         }
 
         /* Make save/export/import buttons match print-now style with color variations */
@@ -2257,6 +2319,8 @@
             position: relative;
             overflow: hidden;
             box-shadow: 0 3px 10px rgba(40, 167, 69, 0.3);
+            height: 38px;
+            box-sizing: border-box;
         }
 
         .btn-cancel {
@@ -2634,6 +2698,8 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
+            height: 38px;
+            box-sizing: border-box;
         }
 
         .btn-clear-log:hover {
@@ -2713,30 +2779,45 @@
         .log-header-actions { gap: 10px; align-items: center; }
         .log-action-buttons { display: none; gap: 10px; align-items: center; }
         .right-section.log-fab-open .log-action-buttons { display: flex; }
-        .log-fab {
-            position: absolute;
-            right: -11px;
-            bottom: 0px;
-            width: 35px;
-            height: 35px;
-            border-radius: 50%;
-            border: none;
-            color: white;
-            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 22px;
-            cursor: pointer;
-            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-            z-index: 10;
+        .log-fab,
+        button.log-fab,
+        button.log-fab[type="button"] {
+            position: absolute !important;
+            right: -16px !important;
+            bottom: 326px !important;
+            width: 35px !important;
+            height: 35px !important;
+            min-width: 35px !important;
+            min-height: 35px !important;
+            max-width: 35px !important;
+            max-height: 35px !important;
+            padding: 0 !important;
+            border-radius: 50% !important;
+            border: none !important;
+            color: white !important;
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%) !important;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 22px !important;
+            cursor: pointer !important;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease !important;
+            z-index: 10 !important;
+            overflow: hidden !important;
+            aspect-ratio: 1 / 1 !important;
+            box-sizing: border-box !important;
+            font-weight: normal !important;
         }
         .log-fab:hover { 
             transform: translateY(-2px);
             box-shadow: 0 14px 28px rgba(0,0,0,0.18);
         }
-        .right-section.log-fab-open .log-fab { background: linear-gradient(135deg, #17a2b8 0%, #0d6efd 100%); }
+        .right-section.log-fab-open .log-fab,
+        .right-section.log-fab-open button.log-fab,
+        .right-section.log-fab-open button.log-fab[type="button"] { 
+            background: linear-gradient(135deg, #17a2b8 0%, #0d6efd 100%) !important; 
+        }
         .log-fab .icon-plus { transition: transform 0.2s ease; display: inline-block; }
         .right-section.log-fab-open .log-fab .icon-plus { transform: rotate(45deg); }
 
@@ -2859,6 +2940,8 @@
             cursor: pointer;
             transition: all 0.3s ease;
             min-width: 120px;
+            height: 38px;
+            box-sizing: border-box;
         }
 
         .btn-load-data:hover {
@@ -2880,6 +2963,8 @@
             transition: all 0.3s ease;
             flex: 1;
             min-width: 120px;
+            height: 38px;
+            box-sizing: border-box;
         }
 
         .btn-export-log:hover {
@@ -2899,6 +2984,8 @@
             transition: all 0.3s ease;
             flex: 1;
             min-width: 120px;
+            height: 38px;
+            box-sizing: border-box;
         }
 
         .btn-import-log:hover {
@@ -2919,6 +3006,8 @@
             flex: 1;
             margin: 0 4px;
             min-width: 120px;
+            height: 38px;
+            box-sizing: border-box;
         }
 
         .btn-restore-log:hover {
@@ -2938,6 +3027,8 @@
             cursor: pointer;
             transition: all 0.3s ease;
             min-width: 110px;
+            height: 38px;
+            box-sizing: border-box;
         }
         .btn-edit-log:hover {
             transform: translateY(-1px);
@@ -2954,6 +3045,8 @@
             cursor: pointer;
             transition: all 0.3s ease;
             min-width: 110px;
+            height: 38px;
+            box-sizing: border-box;
         }
         .btn-delete-log:hover {
             transform: translateY(-1px);
@@ -3133,7 +3226,7 @@
       border-color: #4a6fa5;
     }
 
-    button[type="button"] {
+    button[type="button"]:not(.input-icon) {
       background-color: #4CAF50;
       color: white;
       border: none;
@@ -3144,7 +3237,7 @@
       transition: background-color 0.3s;
     }
 
-    button[type="button"]:hover {
+    button[type="button"]:not(.input-icon):hover {
       background-color: #3e8e41;
     }
 
@@ -3166,6 +3259,7 @@
       font-weight: 600;
       position: sticky;
       top: 0;
+      z-index: 100;
     }
 
     tr:nth-child(even) {
@@ -3427,6 +3521,15 @@
       border-radius: 4px;
       cursor: pointer;
       margin: 2px;
+      box-shadow: none;
+    }
+
+    .row-action-btn[disabled],
+    .row-action-btn:disabled,
+    .row-action-btn[style*="opacity: 0.3"],
+    .row-action-btn[style*="opacity:0.3"] {
+      box-shadow: none !important;
+      pointer-events: none;
     }
 
     .edit-btn {
@@ -3623,7 +3726,7 @@
       border-color: #4a6fa5;
     }
 
-    button[type="button"] {
+    button[type="button"]:not(.input-icon) {
       background-color: #4CAF50;
       color: white;
       border: none;
@@ -3634,7 +3737,7 @@
       transition: background-color 0.3s;
     }
 
-    button[type="button"]:hover {
+    button[type="button"]:not(.input-icon):hover {
       background-color: #3e8e41;
     }
 
@@ -3656,6 +3759,7 @@
       font-weight: 600;
       position: sticky;
       top: 0;
+      z-index: 100;
     }
 
     tr:nth-child(even) {
@@ -3916,6 +4020,15 @@
       border-radius: 4px;
       cursor: pointer;
       margin: 2px;
+      box-shadow: none;
+    }
+
+    .row-action-btn[disabled],
+    .row-action-btn:disabled,
+    .row-action-btn[style*="opacity: 0.3"],
+    .row-action-btn[style*="opacity:0.3"] {
+      box-shadow: none !important;
+      pointer-events: none;
     }
 
     .edit-btn {
@@ -4158,7 +4271,7 @@
                                 <button type="button" class="btn-export-log" onclick="exportInputLogToCSV()" title="Export ke CSV (Excel)">⬇️ Export Log</button>
                                 <button type="button" class="btn-import-log" onclick="document.getElementById('importLogFileInput').click()" title="Import dari CSV (Excel)">⬆️ Import Log</button>
                                 <input type="file" id="importLogFileInput" accept=".csv" style="display:none" onchange="handleImportLogFile(event)">
-                                <button type="button" class="btn-restore-log" onclick="triggerRestoreFileSelection()" title="Restore dari beberapa file backup (CSV/JSON)" style="height: 42px;">🔄Restore Log</button>
+                                <button type="button" class="btn-restore-log" onclick="triggerRestoreFileSelection()" title="Restore dari beberapa file backup (CSV/JSON)">🔄Restore Log</button>
                                 <input type="file" id="restoreLogFileInput" accept=".csv,.json" multiple="multiple" style="display:none" onchange="handleRestoreLogFiles(event)">
                                 <button type="button" class="btn-clear-log" onclick="clearInputLog()" title="Hapus semua log">🗑️ Clear Log</button>
                             </div>
@@ -5024,7 +5137,7 @@ No. Kendaraan: ${noKendaraan}
             }
             
             // Export data for backup/download
-            exportData() {
+            async exportData() {
                 const allData = {};
                 const keys = ['databaseToko', 'databaseTokoLengkap', 'printTextPositions', 
                              'inputLogHistory', 'lastNomorSJ', 'printFontSize', 'printFontFamily', 
@@ -5037,16 +5150,226 @@ No. Kendaraan: ${noKendaraan}
                     }
                 });
                 
+                // Try to get inputLogHistory from IndexedDB if available (prioritize IndexedDB)
+                try {
+                    // Try to access IndexedDB directly
+                    const idbLogHistory = await new Promise((resolve, reject) => {
+                        try {
+                            const req = window.indexedDB.open('sj-logs-db', 1);
+                            req.onsuccess = () => {
+                                const db = req.result;
+                                const tx = db.transaction('kv', 'readonly');
+                                const store = tx.objectStore('kv');
+                                const getReq = store.get('inputLogHistory');
+                                getReq.onsuccess = () => {
+                                    db.close();
+                                    resolve(getReq.result ? getReq.result.value : undefined);
+                                };
+                                getReq.onerror = () => {
+                                    db.close();
+                                    reject(getReq.error);
+                                };
+                            };
+                            req.onerror = () => reject(req.error);
+                        } catch (e) {
+                            reject(e);
+                        }
+                    });
+                    
+                    if (Array.isArray(idbLogHistory) && idbLogHistory.length > 0) {
+                        allData['inputLogHistory'] = idbLogHistory;
+                        console.log('✅ Input log included in backup from IndexedDB:', idbLogHistory.length, 'entries');
+                    } else if (allData['inputLogHistory'] && Array.isArray(allData['inputLogHistory'])) {
+                        console.log('✅ Input log included in backup from localStorage:', allData['inputLogHistory'].length, 'entries');
+                    } else if (typeof window !== 'undefined' && window.inputLogHistory && Array.isArray(window.inputLogHistory)) {
+                        allData['inputLogHistory'] = window.inputLogHistory;
+                        console.log('✅ Input log included in backup from window.inputLogHistory:', window.inputLogHistory.length, 'entries');
+                    }
+                } catch (e) {
+                    console.warn('⚠️ Failed to export input log from IndexedDB, trying alternatives:', e);
+                    // Fallback to localStorage or window variable
+                    if (allData['inputLogHistory'] && Array.isArray(allData['inputLogHistory'])) {
+                        console.log('✅ Input log included in backup from localStorage:', allData['inputLogHistory'].length, 'entries');
+                    } else if (typeof window !== 'undefined' && window.inputLogHistory && Array.isArray(window.inputLogHistory)) {
+                        allData['inputLogHistory'] = window.inputLogHistory;
+                        console.log('✅ Input log included in backup from window.inputLogHistory:', window.inputLogHistory.length, 'entries');
+                    }
+                }
+                
+                // Export riwayat stok from IndexedDB
+                try {
+                    if (typeof loadData === 'function') {
+                        const stokDataArray = await loadData();
+                        if (Array.isArray(stokDataArray) && stokDataArray.length > 0) {
+                            allData['stokData'] = stokDataArray;
+                            console.log('✅ Riwayat stok included in backup:', stokDataArray.length, 'entries');
+                        }
+                    }
+                } catch (e) {
+                    console.warn('⚠️ Failed to export riwayat stok:', e);
+                }
+                
                 return JSON.stringify(allData, null, 2);
             }
             
             // Import data from backup
-            importData(jsonData) {
+            async importData(jsonData) {
                 try {
                     const data = JSON.parse(jsonData);
+                    
+                    // Import riwayat stok to IndexedDB if present
+                    if (data.stokData && Array.isArray(data.stokData)) {
+                        try {
+                            const storeName = typeof STORE_NAME !== 'undefined' ? STORE_NAME : 'stokData';
+                            
+                            // Clear existing stokData first
+                            if (typeof initDB === 'function') {
+                                await initDB();
+                                if (typeof db !== 'undefined' && db) {
+                                    const transaction = db.transaction([storeName], 'readwrite');
+                                    const store = transaction.objectStore(storeName);
+                                    await new Promise((resolve, reject) => {
+                                        const clearRequest = store.clear();
+                                        clearRequest.onsuccess = () => resolve();
+                                        clearRequest.onerror = () => reject(clearRequest.error);
+                                    });
+                                    
+                                    // Add all stokData entries
+                                    for (const entry of data.stokData) {
+                                        await new Promise((resolve, reject) => {
+                                            const request = store.add(entry);
+                                            request.onsuccess = () => resolve();
+                                            request.onerror = () => reject(request.error);
+                                        });
+                                    }
+                                    
+                                    // Update global stokData array
+                                    if (typeof window !== 'undefined') {
+                                        window.stokData = data.stokData;
+                                        // Also update stokData variable if it exists in current scope
+                                        if (typeof stokData !== 'undefined') {
+                                            stokData = data.stokData;
+                                        }
+                                    }
+                                    
+                                    // Update tables if functions are available
+                                    if (typeof updateStokTable === 'function') {
+                                        updateStokTable();
+                                    }
+                                    if (typeof updateTotalSisa === 'function') {
+                                        updateTotalSisa();
+                                    }
+                                    
+                                    console.log('✅ Riwayat stok imported successfully:', data.stokData.length, 'entries');
+                                }
+                            } else if (typeof addEntry === 'function') {
+                                // Fallback: use addEntry function if available
+                                for (const entry of data.stokData) {
+                                    await addEntry(entry);
+                                }
+                                
+                                // Update global stokData array
+                                if (typeof window !== 'undefined') {
+                                    window.stokData = data.stokData;
+                                    if (typeof stokData !== 'undefined') {
+                                        stokData = data.stokData;
+                                    }
+                                }
+                                
+                                // Update tables if functions are available
+                                if (typeof updateStokTable === 'function') {
+                                    updateStokTable();
+                                }
+                                if (typeof updateTotalSisa === 'function') {
+                                    updateTotalSisa();
+                                }
+                                
+                                console.log('✅ Riwayat stok imported via addEntry:', data.stokData.length, 'entries');
+                            }
+                            
+                            // Remove stokData from data object to avoid saving to localStorage
+                            delete data.stokData;
+                        } catch (e) {
+                            console.warn('⚠️ Failed to import riwayat stok:', e);
+                        }
+                    }
+                    
+                    // Import other data to localStorage
                     Object.keys(data).forEach(key => {
                         this.save(key, data[key]);
                     });
+                    
+                    // Update inputLogHistory and render log if present
+                    if (data.inputLogHistory && Array.isArray(data.inputLogHistory)) {
+                        try {
+                            // Save to IndexedDB if available
+                            try {
+                                const db = await new Promise((resolve, reject) => {
+                                    const req = window.indexedDB.open('sj-logs-db', 1);
+                                    req.onupgradeneeded = () => {
+                                        const db = req.result;
+                                        if (!db.objectStoreNames.contains('kv')) {
+                                            db.createObjectStore('kv', { keyPath: 'key' });
+                                        }
+                                    };
+                                    req.onsuccess = () => resolve(req.result);
+                                    req.onerror = () => reject(req.error);
+                                });
+                                
+                                await new Promise((resolve, reject) => {
+                                    const tx = db.transaction('kv', 'readwrite');
+                                    tx.oncomplete = resolve;
+                                    tx.onerror = () => reject(tx.error);
+                                    tx.objectStore('kv').put({ key: 'inputLogHistory', value: data.inputLogHistory });
+                                });
+                                db.close();
+                                console.log('✅ Input log saved to IndexedDB:', data.inputLogHistory.length, 'entries');
+                            } catch (e) {
+                                console.warn('⚠️ Failed to save input log to IndexedDB:', e);
+                            }
+                            
+                            // Update global inputLogHistory variable
+                            if (typeof window !== 'undefined') {
+                                if (typeof inputLogHistory !== 'undefined') {
+                                    inputLogHistory = data.inputLogHistory;
+                                }
+                                window.inputLogHistory = data.inputLogHistory;
+                            }
+                            
+                            // Render the log
+                            if (typeof renderInputLog === 'function') {
+                                renderInputLog();
+                                console.log('✅ Input log rendered after restore');
+                            }
+                            
+                            // Update suggestions
+                            if (typeof updateKacaSuggestionsFromLogs === 'function') {
+                                updateKacaSuggestionsFromLogs();
+                            }
+                            
+                            // Update nomor SJ warning
+                            if (typeof window.refreshNomorSJWarningNow === 'function') {
+                                window.refreshNomorSJWarningNow();
+                            }
+                            
+                            console.log('✅ Input log imported and rendered:', data.inputLogHistory.length, 'entries');
+                        } catch (e) {
+                            console.warn('⚠️ Failed to render input log after restore:', e);
+                        }
+                    }
+                    
+                    // Update lastNomorSJ if present
+                    if (data.lastNomorSJ !== undefined) {
+                        try {
+                            if (typeof window !== 'undefined' && typeof lastNomorSJ !== 'undefined') {
+                                lastNomorSJ = data.lastNomorSJ;
+                                window.lastNomorSJ = data.lastNomorSJ;
+                            }
+                        } catch (e) {
+                            console.warn('⚠️ Failed to update lastNomorSJ:', e);
+                        }
+                    }
+                    
                     console.log('✅ Data imported successfully');
                     return true;
                 } catch (e) {
@@ -5066,9 +5389,9 @@ No. Kendaraan: ${noKendaraan}
             const restoreFile = document.getElementById('restoreFile');
             
             if (backupBtn) {
-                backupBtn.addEventListener('click', function() {
+                backupBtn.addEventListener('click', async function() {
                     try {
-                        const data = storageManager.exportData();
+                        const data = await storageManager.exportData();
                         const blob = new Blob([data], { type: 'application/json' });
                         const url = URL.createObjectURL(blob);
                         const a = document.createElement('a');
@@ -5079,7 +5402,7 @@ No. Kendaraan: ${noKendaraan}
                         document.body.removeChild(a);
                         URL.revokeObjectURL(url);
                         
-                        alert('✅ Data berhasil di-backup!');
+                        alert('✅ Data berhasil di-backup');
                     } catch (error) {
                         console.error('❌ Backup failed:', error);
                         alert('❌ Gagal melakukan backup data!');
@@ -5099,11 +5422,11 @@ No. Kendaraan: ${noKendaraan}
                     if (!file) return;
                     
                     const reader = new FileReader();
-                    reader.onload = function(e) {
+                    reader.onload = async function(e) {
                         try {
-                            const success = storageManager.importData(e.target.result);
+                            const success = await storageManager.importData(e.target.result);
                             if (success) {
-                                alert('✅ Data berhasil di-restore! Halaman akan di-refresh.');
+                                alert('✅ Data berhasil di-restore');
                                 location.reload();
                             } else {
                                 alert('❌ Gagal melakukan restore data!');
@@ -13318,9 +13641,9 @@ No. Kendaraan: ${noKendaraan}
           <td>${entry.ukuran}</td>
           <td>${entry.harga ? entry.harga.toLocaleString('id-ID') : '-'}</td>
           <td>${entry.hargaJual ? entry.hargaJual.toLocaleString('id-ID') : '-'}</td>
-          <td class="masuk">${entry.masuk}</td>
-          <td class="keluar">${entry.keluar}</td>
-          <td class="sisa">${currentStock}</td>
+          <td class="masuk">${entry.masuk.toLocaleString('id-ID')}</td>
+          <td class="keluar">${entry.keluar.toLocaleString('id-ID')}</td>
+          <td class="sisa">${currentStock.toLocaleString('id-ID')}</td>
           <td>
             <div class="action-buttons-container">
               ${isPembelian ? `
@@ -13456,17 +13779,37 @@ No. Kendaraan: ${noKendaraan}
       // Clear the table body
       totalSisaTableBody.innerHTML = "";
 
-      // Insert grouped data into the Total Sisa table
-      for (const key in groupedData) {
-        const data = groupedData[key];
+      // Convert groupedData to array and sort by jenis kaca (tebal) A-Z
+      const sortedData = Object.keys(groupedData).map(key => ({
+        key: key,
+        data: groupedData[key]
+      })).sort((a, b) => {
+        // Sort by jenis kaca (tebal) A-Z
+        const tebalA = (a.data.tebal || '').toUpperCase();
+        const tebalB = (b.data.tebal || '').toUpperCase();
+        if (tebalA !== tebalB) {
+          return tebalA.localeCompare(tebalB);
+        }
+        // If jenis kaca is the same, sort by ukuran A-Z
+        const ukuranA = (a.data.ukuran || '').toUpperCase();
+        const ukuranB = (b.data.ukuran || '').toUpperCase();
+        return ukuranA.localeCompare(ukuranB);
+      });
+
+      // Insert sorted grouped data into the Total Sisa table
+      sortedData.forEach(({ data }) => {
         const row = totalSisaTableBody.insertRow();
+        const sisaValue = data.totalSisa.toLocaleString('id-ID');
+        const sisaClass = data.totalSisa < 0 ? 'sisa negative' : 'sisa';
+        const sisaStyle = data.totalSisa < 0 ? 'style="color: #dc3545; font-weight: 600;"' : '';
+        
         row.innerHTML = `
           <td>${data.tebal}</td>
           <td>${data.ukuran}</td>
           <td>${data.hargaMasuk !== undefined ? data.hargaMasuk.toLocaleString('id-ID') : '-'}</td>
-          <td class="masuk">${data.totalMasuk}</td>
-          <td class="keluar">${data.totalKeluar}</td>
-          <td class="sisa">${data.totalSisa}</td>
+          <td class="masuk">${data.totalMasuk.toLocaleString('id-ID')}</td>
+          <td class="keluar">${data.totalKeluar.toLocaleString('id-ID')}</td>
+          <td class="${sisaClass}" ${sisaStyle}>${sisaValue}</td>
         `;
         
         // Add click event to fill form fields
@@ -13491,7 +13834,7 @@ No. Kendaraan: ${noKendaraan}
         row.addEventListener('mouseleave', function() {
           this.style.backgroundColor = '';
         });
-      }
+      });
       
       // Update jenis kaca autocomplete list
       updateJenisKacaList();
@@ -13923,7 +14266,7 @@ No. Kendaraan: ${noKendaraan}
             }
             
             // Export data for backup/download
-            exportData() {
+            async exportData() {
                 const allData = {};
                 const keys = ['databaseToko', 'databaseTokoLengkap', 'printTextPositions', 
                              'inputLogHistory', 'lastNomorSJ', 'printFontSize', 'printFontFamily', 
@@ -13936,16 +14279,226 @@ No. Kendaraan: ${noKendaraan}
                     }
                 });
                 
+                // Try to get inputLogHistory from IndexedDB if available (prioritize IndexedDB)
+                try {
+                    // Try to access IndexedDB directly
+                    const idbLogHistory = await new Promise((resolve, reject) => {
+                        try {
+                            const req = window.indexedDB.open('sj-logs-db', 1);
+                            req.onsuccess = () => {
+                                const db = req.result;
+                                const tx = db.transaction('kv', 'readonly');
+                                const store = tx.objectStore('kv');
+                                const getReq = store.get('inputLogHistory');
+                                getReq.onsuccess = () => {
+                                    db.close();
+                                    resolve(getReq.result ? getReq.result.value : undefined);
+                                };
+                                getReq.onerror = () => {
+                                    db.close();
+                                    reject(getReq.error);
+                                };
+                            };
+                            req.onerror = () => reject(req.error);
+                        } catch (e) {
+                            reject(e);
+                        }
+                    });
+                    
+                    if (Array.isArray(idbLogHistory) && idbLogHistory.length > 0) {
+                        allData['inputLogHistory'] = idbLogHistory;
+                        console.log('✅ Input log included in backup from IndexedDB:', idbLogHistory.length, 'entries');
+                    } else if (allData['inputLogHistory'] && Array.isArray(allData['inputLogHistory'])) {
+                        console.log('✅ Input log included in backup from localStorage:', allData['inputLogHistory'].length, 'entries');
+                    } else if (typeof window !== 'undefined' && window.inputLogHistory && Array.isArray(window.inputLogHistory)) {
+                        allData['inputLogHistory'] = window.inputLogHistory;
+                        console.log('✅ Input log included in backup from window.inputLogHistory:', window.inputLogHistory.length, 'entries');
+                    }
+                } catch (e) {
+                    console.warn('⚠️ Failed to export input log from IndexedDB, trying alternatives:', e);
+                    // Fallback to localStorage or window variable
+                    if (allData['inputLogHistory'] && Array.isArray(allData['inputLogHistory'])) {
+                        console.log('✅ Input log included in backup from localStorage:', allData['inputLogHistory'].length, 'entries');
+                    } else if (typeof window !== 'undefined' && window.inputLogHistory && Array.isArray(window.inputLogHistory)) {
+                        allData['inputLogHistory'] = window.inputLogHistory;
+                        console.log('✅ Input log included in backup from window.inputLogHistory:', window.inputLogHistory.length, 'entries');
+                    }
+                }
+                
+                // Export riwayat stok from IndexedDB
+                try {
+                    if (typeof loadData === 'function') {
+                        const stokDataArray = await loadData();
+                        if (Array.isArray(stokDataArray) && stokDataArray.length > 0) {
+                            allData['stokData'] = stokDataArray;
+                            console.log('✅ Riwayat stok included in backup:', stokDataArray.length, 'entries');
+                        }
+                    }
+                } catch (e) {
+                    console.warn('⚠️ Failed to export riwayat stok:', e);
+                }
+                
                 return JSON.stringify(allData, null, 2);
             }
             
             // Import data from backup
-            importData(jsonData) {
+            async importData(jsonData) {
                 try {
                     const data = JSON.parse(jsonData);
+                    
+                    // Import riwayat stok to IndexedDB if present
+                    if (data.stokData && Array.isArray(data.stokData)) {
+                        try {
+                            const storeName = typeof STORE_NAME !== 'undefined' ? STORE_NAME : 'stokData';
+                            
+                            // Clear existing stokData first
+                            if (typeof initDB === 'function') {
+                                await initDB();
+                                if (typeof db !== 'undefined' && db) {
+                                    const transaction = db.transaction([storeName], 'readwrite');
+                                    const store = transaction.objectStore(storeName);
+                                    await new Promise((resolve, reject) => {
+                                        const clearRequest = store.clear();
+                                        clearRequest.onsuccess = () => resolve();
+                                        clearRequest.onerror = () => reject(clearRequest.error);
+                                    });
+                                    
+                                    // Add all stokData entries
+                                    for (const entry of data.stokData) {
+                                        await new Promise((resolve, reject) => {
+                                            const request = store.add(entry);
+                                            request.onsuccess = () => resolve();
+                                            request.onerror = () => reject(request.error);
+                                        });
+                                    }
+                                    
+                                    // Update global stokData array
+                                    if (typeof window !== 'undefined') {
+                                        window.stokData = data.stokData;
+                                        // Also update stokData variable if it exists in current scope
+                                        if (typeof stokData !== 'undefined') {
+                                            stokData = data.stokData;
+                                        }
+                                    }
+                                    
+                                    // Update tables if functions are available
+                                    if (typeof updateStokTable === 'function') {
+                                        updateStokTable();
+                                    }
+                                    if (typeof updateTotalSisa === 'function') {
+                                        updateTotalSisa();
+                                    }
+                                    
+                                    console.log('✅ Riwayat stok imported successfully:', data.stokData.length, 'entries');
+                                }
+                            } else if (typeof addEntry === 'function') {
+                                // Fallback: use addEntry function if available
+                                for (const entry of data.stokData) {
+                                    await addEntry(entry);
+                                }
+                                
+                                // Update global stokData array
+                                if (typeof window !== 'undefined') {
+                                    window.stokData = data.stokData;
+                                    if (typeof stokData !== 'undefined') {
+                                        stokData = data.stokData;
+                                    }
+                                }
+                                
+                                // Update tables if functions are available
+                                if (typeof updateStokTable === 'function') {
+                                    updateStokTable();
+                                }
+                                if (typeof updateTotalSisa === 'function') {
+                                    updateTotalSisa();
+                                }
+                                
+                                console.log('✅ Riwayat stok imported via addEntry:', data.stokData.length, 'entries');
+                            }
+                            
+                            // Remove stokData from data object to avoid saving to localStorage
+                            delete data.stokData;
+                        } catch (e) {
+                            console.warn('⚠️ Failed to import riwayat stok:', e);
+                        }
+                    }
+                    
+                    // Import other data to localStorage
                     Object.keys(data).forEach(key => {
                         this.save(key, data[key]);
                     });
+                    
+                    // Update inputLogHistory and render log if present
+                    if (data.inputLogHistory && Array.isArray(data.inputLogHistory)) {
+                        try {
+                            // Save to IndexedDB if available
+                            try {
+                                const db = await new Promise((resolve, reject) => {
+                                    const req = window.indexedDB.open('sj-logs-db', 1);
+                                    req.onupgradeneeded = () => {
+                                        const db = req.result;
+                                        if (!db.objectStoreNames.contains('kv')) {
+                                            db.createObjectStore('kv', { keyPath: 'key' });
+                                        }
+                                    };
+                                    req.onsuccess = () => resolve(req.result);
+                                    req.onerror = () => reject(req.error);
+                                });
+                                
+                                await new Promise((resolve, reject) => {
+                                    const tx = db.transaction('kv', 'readwrite');
+                                    tx.oncomplete = resolve;
+                                    tx.onerror = () => reject(tx.error);
+                                    tx.objectStore('kv').put({ key: 'inputLogHistory', value: data.inputLogHistory });
+                                });
+                                db.close();
+                                console.log('✅ Input log saved to IndexedDB:', data.inputLogHistory.length, 'entries');
+                            } catch (e) {
+                                console.warn('⚠️ Failed to save input log to IndexedDB:', e);
+                            }
+                            
+                            // Update global inputLogHistory variable
+                            if (typeof window !== 'undefined') {
+                                if (typeof inputLogHistory !== 'undefined') {
+                                    inputLogHistory = data.inputLogHistory;
+                                }
+                                window.inputLogHistory = data.inputLogHistory;
+                            }
+                            
+                            // Render the log
+                            if (typeof renderInputLog === 'function') {
+                                renderInputLog();
+                                console.log('✅ Input log rendered after restore');
+                            }
+                            
+                            // Update suggestions
+                            if (typeof updateKacaSuggestionsFromLogs === 'function') {
+                                updateKacaSuggestionsFromLogs();
+                            }
+                            
+                            // Update nomor SJ warning
+                            if (typeof window.refreshNomorSJWarningNow === 'function') {
+                                window.refreshNomorSJWarningNow();
+                            }
+                            
+                            console.log('✅ Input log imported and rendered:', data.inputLogHistory.length, 'entries');
+                        } catch (e) {
+                            console.warn('⚠️ Failed to render input log after restore:', e);
+                        }
+                    }
+                    
+                    // Update lastNomorSJ if present
+                    if (data.lastNomorSJ !== undefined) {
+                        try {
+                            if (typeof window !== 'undefined' && typeof lastNomorSJ !== 'undefined') {
+                                lastNomorSJ = data.lastNomorSJ;
+                                window.lastNomorSJ = data.lastNomorSJ;
+                            }
+                        } catch (e) {
+                            console.warn('⚠️ Failed to update lastNomorSJ:', e);
+                        }
+                    }
+                    
                     console.log('✅ Data imported successfully');
                     return true;
                 } catch (e) {
@@ -13965,9 +14518,9 @@ No. Kendaraan: ${noKendaraan}
             const restoreFile = document.getElementById('restoreFile');
             
             if (backupBtn) {
-                backupBtn.addEventListener('click', function() {
+                backupBtn.addEventListener('click', async function() {
                     try {
-                        const data = storageManager.exportData();
+                        const data = await storageManager.exportData();
                         const blob = new Blob([data], { type: 'application/json' });
                         const url = URL.createObjectURL(blob);
                         const a = document.createElement('a');
@@ -13978,7 +14531,7 @@ No. Kendaraan: ${noKendaraan}
                         document.body.removeChild(a);
                         URL.revokeObjectURL(url);
                         
-                        alert('✅ Data berhasil di-backup!');
+                        alert('✅ Data berhasil di-backup');
                     } catch (error) {
                         console.error('❌ Backup failed:', error);
                         alert('❌ Gagal melakukan backup data!');
@@ -13998,11 +14551,11 @@ No. Kendaraan: ${noKendaraan}
                     if (!file) return;
                     
                     const reader = new FileReader();
-                    reader.onload = function(e) {
+                    reader.onload = async function(e) {
                         try {
-                            const success = storageManager.importData(e.target.result);
+                            const success = await storageManager.importData(e.target.result);
                             if (success) {
-                                alert('✅ Data berhasil di-restore! Halaman akan di-refresh.');
+                                alert('✅ Data berhasil di-restore');
                                 location.reload();
                             } else {
                                 alert('❌ Gagal melakukan restore data!');
@@ -22062,9 +22615,9 @@ No. Kendaraan: ${noKendaraan}
           <td>${entry.ukuran}</td>
           <td>${entry.harga ? entry.harga.toLocaleString('id-ID') : '-'}</td>
           <td>${entry.hargaJual ? entry.hargaJual.toLocaleString('id-ID') : '-'}</td>
-          <td class="masuk">${entry.masuk}</td>
-          <td class="keluar">${entry.keluar}</td>
-          <td class="sisa">${currentStock}</td>
+          <td class="masuk">${entry.masuk.toLocaleString('id-ID')}</td>
+          <td class="keluar">${entry.keluar.toLocaleString('id-ID')}</td>
+          <td class="sisa">${currentStock.toLocaleString('id-ID')}</td>
           <td>
             <div class="action-buttons-container">
               ${isPembelian ? `
@@ -22200,17 +22753,37 @@ No. Kendaraan: ${noKendaraan}
       // Clear the table body
       totalSisaTableBody.innerHTML = "";
 
-      // Insert grouped data into the Total Sisa table
-      for (const key in groupedData) {
-        const data = groupedData[key];
+      // Convert groupedData to array and sort by jenis kaca (tebal) A-Z
+      const sortedData = Object.keys(groupedData).map(key => ({
+        key: key,
+        data: groupedData[key]
+      })).sort((a, b) => {
+        // Sort by jenis kaca (tebal) A-Z
+        const tebalA = (a.data.tebal || '').toUpperCase();
+        const tebalB = (b.data.tebal || '').toUpperCase();
+        if (tebalA !== tebalB) {
+          return tebalA.localeCompare(tebalB);
+        }
+        // If jenis kaca is the same, sort by ukuran A-Z
+        const ukuranA = (a.data.ukuran || '').toUpperCase();
+        const ukuranB = (b.data.ukuran || '').toUpperCase();
+        return ukuranA.localeCompare(ukuranB);
+      });
+
+      // Insert sorted grouped data into the Total Sisa table
+      sortedData.forEach(({ data }) => {
         const row = totalSisaTableBody.insertRow();
+        const sisaValue = data.totalSisa.toLocaleString('id-ID');
+        const sisaClass = data.totalSisa < 0 ? 'sisa negative' : 'sisa';
+        const sisaStyle = data.totalSisa < 0 ? 'style="color: #dc3545; font-weight: 600;"' : '';
+        
         row.innerHTML = `
           <td>${data.tebal}</td>
           <td>${data.ukuran}</td>
           <td>${data.hargaMasuk !== undefined ? data.hargaMasuk.toLocaleString('id-ID') : '-'}</td>
-          <td class="masuk">${data.totalMasuk}</td>
-          <td class="keluar">${data.totalKeluar}</td>
-          <td class="sisa">${data.totalSisa}</td>
+          <td class="masuk">${data.totalMasuk.toLocaleString('id-ID')}</td>
+          <td class="keluar">${data.totalKeluar.toLocaleString('id-ID')}</td>
+          <td class="${sisaClass}" ${sisaStyle}>${sisaValue}</td>
         `;
         
         // Add click event to fill form fields
@@ -22235,7 +22808,7 @@ No. Kendaraan: ${noKendaraan}
         row.addEventListener('mouseleave', function() {
           this.style.backgroundColor = '';
         });
-      }
+      });
       
       // Update jenis kaca autocomplete list
       updateJenisKacaList();
