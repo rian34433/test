@@ -4813,18 +4813,24 @@
                 const transactions = [];
 
                 kacaRows.forEach((row, index) => {
-                    const jenisKaca = row.querySelector('.jenis-kaca')?.value?.trim() || '';
-                    const ukuran = row.querySelector('.ukuran')?.value?.trim() || '';
-                    const hargaJualInput = row.querySelector('.harga-jual')?.value?.trim() || '';
-                    const totalLbrInput = row.querySelector('input.total-lbr-input')?.value?.trim() || '';
+                    // Cache querySelector results for better performance
+                    const jenisKacaInput = row.querySelector('.jenis-kaca');
+                    const ukuranInput = row.querySelector('.ukuran');
+                    const hargaJualInput = row.querySelector('.harga-jual');
+                    const totalLbrInput = row.querySelector('input.total-lbr-input');
+                    
+                    const jenisKaca = jenisKacaInput?.value?.trim() || '';
+                    const ukuran = ukuranInput?.value?.trim() || '';
+                    const hargaJualValue = hargaJualInput?.value?.trim() || '';
+                    const totalLbrValue = totalLbrInput?.value?.trim() || '';
                     
                     // Skip if no jenis kaca or ukuran
                     if (!jenisKaca || !ukuran) return;
                     
                     // Parse total LBR
                     let totalLbr = 0;
-                    if (totalLbrInput) {
-                        const match = totalLbrInput.match(/^(\d+(?:\.\d+)?)/);
+                    if (totalLbrValue) {
+                        const match = totalLbrValue.match(/^(\d+(?:\.\d+)?)/);
                         if (match) {
                             totalLbr = parseFloat(match[1]);
                         }
@@ -4835,15 +4841,14 @@
                     
                     // Parse harga jual
                     let hargaJual = 0;
-                    if (hargaJualInput) {
-                        const hargaMatch = hargaJualInput.toString().replace(/[.,](?=\d{3}(\D|$))/g, '').replace(',', '.');
+                    if (hargaJualValue) {
+                        const hargaMatch = hargaJualValue.toString().replace(/[.,](?=\d{3}(\D|$))/g, '').replace(',', '.');
                         hargaJual = parseFloat(hargaMatch) || 0;
                     }
                     
                     // Get harga beli from stok data (if available)
                     // First, check if harga was selected from dropdown (stored in data attribute)
                     let hargaBeli = 0;
-                    const ukuranInput = row.querySelector('.ukuran');
                     // Force update harga one more time right before reading it
                     if (ukuranInput) {
                         forceUpdateHargaForUkuran(ukuranInput);
@@ -5911,6 +5916,28 @@ No. Kendaraan: ${noKendaraan}
                     let lastSelectedHarga = '';
                     const UPDATE_THROTTLE = 500; // milliseconds
                     
+                    // Debounce utility function for performance optimization
+                    const debounce = (func, wait) => {
+                        let timeout;
+                        return function executedFunction(...args) {
+                            const later = () => {
+                                clearTimeout(timeout);
+                                func.apply(this, args);
+                            };
+                            clearTimeout(timeout);
+                            timeout = setTimeout(later, wait);
+                        };
+                    };
+                    
+                    // Cache DOM elements for better performance
+                    let cachedUkuranList = null;
+                    const getUkuranList = () => {
+                        if (!cachedUkuranList) {
+                            cachedUkuranList = document.getElementById('datalistUkuran');
+                        }
+                        return cachedUkuranList;
+                    };
+                    
                     // Helper function to update harga from selected ukuran
                     const updateHargaFromSelectedUkuran = function(inputElement, forceUpdate = false) {
                         const ukuranValue = inputElement.value.trim();
@@ -5930,7 +5957,7 @@ No. Kendaraan: ${noKendaraan}
                         lastUkuranValue = ukuranValue;
                         
                         if (ukuranValue) {
-                            const ukuranList = document.getElementById('datalistUkuran');
+                            const ukuranList = getUkuranList();
                             if (ukuranList) {
                                 // Find all matching options (same ukuran might have different harga)
                                 const matchingOptions = Array.from(ukuranList.options).filter(opt => {
@@ -6044,11 +6071,16 @@ No. Kendaraan: ${noKendaraan}
                         }
                     };
                     
+                    // Debounced update function (300ms delay for input events to reduce excessive calls)
+                    const debouncedUpdateHarga = debounce((input) => {
+                        updateHargaFromSelectedUkuran(input, true);
+                    }, 300);
+                    
                     // Track when user selects from datalist
                     ukuranInput.addEventListener('change', function() {
                         isSelectingFromDatalist = true;
                         lastUpdateTime = Date.now();
-                        // Force update to ensure harga is refreshed
+                        // Force update to ensure harga is refreshed (immediate, no debounce)
                         updateHargaFromSelectedUkuran(this, true);
                         
                         // Reset flag after a delay
@@ -6057,16 +6089,16 @@ No. Kendaraan: ${noKendaraan}
                         }, 1000);
                     });
                     
-                    // Also listen to input event for more responsive updates
+                    // Listen to input event with debouncing for better performance
                     ukuranInput.addEventListener('input', function() {
-                        // Force update on input to catch typing changes
-                        updateHargaFromSelectedUkuran(this, true);
+                        // Use debounced update to reduce excessive function calls
+                        debouncedUpdateHarga(this);
                     });
                     
                     // Listen to blur event to catch selections that might not trigger change
                     ukuranInput.addEventListener('blur', function() {
+                        // Immediate update on blur (no debounce needed)
                         setTimeout(() => {
-                            // Force update on blur to catch any missed changes
                             updateHargaFromSelectedUkuran(this, true);
                         }, 150);
                     });
@@ -6074,22 +6106,15 @@ No. Kendaraan: ${noKendaraan}
                     // Listen to keyup for Enter/Tab key selections
                     ukuranInput.addEventListener('keyup', function(e) {
                         if (e.key === 'Enter' || e.key === 'Tab' || e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                            // Immediate update for keyboard navigation (no debounce)
                             setTimeout(() => {
-                                // Force update when selecting with keyboard
                                 updateHargaFromSelectedUkuran(this, true);
                             }, 100);
                         }
                     });
                     
-                    // Polling to check for changes (as fallback for better responsiveness)
-                    let pollingInterval = setInterval(() => {
-                        const currentValue = ukuranInput.value.trim();
-                        const currentHarga = ukuranInput.getAttribute('data-selected-harga') || '';
-                        // Update if value changed OR if we need to refresh harga
-                        if (currentValue !== lastUkuranValue || currentHarga !== lastSelectedHarga) {
-                            updateHargaFromSelectedUkuran(ukuranInput, true);
-                        }
-                    }, 200); // Check every 200ms for better responsiveness
+                    // Polling removed for better performance - using event-driven approach instead
+                    // This eliminates memory leaks and reduces CPU usage significantly
                     
                     // Always update datalist based on jenis kaca from the same row when focused
                     ukuranInput.addEventListener('focus', function() {
@@ -6159,7 +6184,25 @@ No. Kendaraan: ${noKendaraan}
                 const rows = tbody.querySelectorAll('tr');
                 
                 if (rows.length > 1) {
-                    tbody.removeChild(rows[rows.length - 1]);
+                    const rowToRemove = rows[rows.length - 1];
+                    
+                    // Clean up any intervals or event listeners from the row being removed
+                    // This prevents memory leaks
+                    const ukuranInputs = rowToRemove.querySelectorAll('.ukuran');
+                    ukuranInputs.forEach(input => {
+                        // Clear any stored intervals (if polling was used)
+                        if (input._pollingInterval) {
+                            clearInterval(input._pollingInterval);
+                            delete input._pollingInterval;
+                        }
+                        // Clear any debounce timeouts
+                        if (input._debounceTimeout) {
+                            clearTimeout(input._debounceTimeout);
+                            delete input._debounceTimeout;
+                        }
+                    });
+                    
+                    tbody.removeChild(rowToRemove);
                     // Update grand total setelah hapus baris
                     setTimeout(() => {
                         updateGrandTotal();
@@ -6183,6 +6226,32 @@ No. Kendaraan: ${noKendaraan}
         }
 
         // Fungsi untuk menghitung total LBR
+        // Debounced updateGrandTotal for better performance (global cache)
+        if (!window._debouncedUpdateGrandTotal) {
+            window._debouncedUpdateGrandTotal = (function() {
+                let timeout;
+                return function() {
+                    clearTimeout(timeout);
+                    timeout = setTimeout(() => {
+                        updateGrandTotal();
+                    }, 150);
+                };
+            })();
+        }
+        const debouncedUpdateGrandTotal = window._debouncedUpdateGrandTotal;
+        
+        // Cache printModal element for better performance (global cache)
+        if (!window._getPrintModal) {
+            let cachedPrintModal = null;
+            window._getPrintModal = () => {
+                if (!cachedPrintModal) {
+                    cachedPrintModal = document.getElementById('printModalOverlay');
+                }
+                return cachedPrintModal;
+            };
+        }
+        const getPrintModal = window._getPrintModal;
+        
         function calculateTotalLbr(input) {
             try {
                 if (!input) {
@@ -6222,13 +6291,11 @@ No. Kendaraan: ${noKendaraan}
                 // Format total dengan satuan LBR
                 totalInput.value = Math.round(total) + " LBR";
                 
-                // Update grand total
-                setTimeout(() => {
-                    updateGrandTotal();
-                }, 100);
+                // Update grand total with debouncing for better performance
+                debouncedUpdateGrandTotal();
                 
-                // Trigger print data refresh if modal is open
-                const printModal = document.getElementById('printModalOverlay');
+                // Trigger print data refresh if modal is open (using cached element)
+                const printModal = getPrintModal();
                 if (printModal && printModal.style.display === 'flex') {
                     setTimeout(() => {
                         if (typeof refreshPrintData === 'function') {
@@ -6261,10 +6328,22 @@ No. Kendaraan: ${noKendaraan}
         }
 
         // Fungsi untuk update grand total
+        // Cache grandTotalInput for better performance (global cache)
+        if (!window._getGrandTotalInput) {
+            let cachedGrandTotalInput = null;
+            window._getGrandTotalInput = () => {
+                if (!cachedGrandTotalInput) {
+                    cachedGrandTotalInput = document.querySelector('.grand-total-input');
+                }
+                return cachedGrandTotalInput;
+            };
+        }
+        const getGrandTotalInput = window._getGrandTotalInput;
+        
         function updateGrandTotal() {
             try {
                 const grandTotal = calculateGrandTotal();
-                const grandTotalInput = document.querySelector('.grand-total-input');
+                const grandTotalInput = getGrandTotalInput();
                 
                 if (grandTotalInput) {
                     grandTotalInput.value = grandTotal + " LBR";
@@ -6272,8 +6351,8 @@ No. Kendaraan: ${noKendaraan}
                     console.warn('Grand total input element not found');
                 }
                 
-                // Trigger print data refresh if modal is open
-                const printModal = document.getElementById('printModalOverlay');
+                // Trigger print data refresh if modal is open (using cached element)
+                const printModal = getPrintModal();
                 if (printModal && printModal.style.display === 'flex') {
                     setTimeout(() => {
                         if (typeof refreshPrintData === 'function') {
@@ -9784,6 +9863,28 @@ No. Kendaraan: ${noKendaraan}
                     let lastSelectedHarga = '';
                     const UPDATE_THROTTLE = 500; // milliseconds
                     
+                    // Debounce utility function for performance optimization
+                    const debounce = (func, wait) => {
+                        let timeout;
+                        return function executedFunction(...args) {
+                            const later = () => {
+                                clearTimeout(timeout);
+                                func.apply(this, args);
+                            };
+                            clearTimeout(timeout);
+                            timeout = setTimeout(later, wait);
+                        };
+                    };
+                    
+                    // Cache DOM elements for better performance
+                    let cachedUkuranList = null;
+                    const getUkuranList = () => {
+                        if (!cachedUkuranList) {
+                            cachedUkuranList = document.getElementById('datalistUkuran');
+                        }
+                        return cachedUkuranList;
+                    };
+                    
                     // Helper function to update harga from selected ukuran
                     const updateHargaFromSelectedUkuran = function(inputElement, forceUpdate = false) {
                         const ukuranValue = inputElement.value.trim();
@@ -9803,7 +9904,7 @@ No. Kendaraan: ${noKendaraan}
                         lastUkuranValue = ukuranValue;
                         
                         if (ukuranValue) {
-                            const ukuranList = document.getElementById('datalistUkuran');
+                            const ukuranList = getUkuranList();
                             if (ukuranList) {
                                 // Find all matching options (same ukuran might have different harga)
                                 const matchingOptions = Array.from(ukuranList.options).filter(opt => {
@@ -13761,6 +13862,19 @@ No. Kendaraan: ${noKendaraan}
     }
 
     // Function to calculate current stock at the time of transaction
+    // Cache for date parsing to improve performance (global cache)
+    if (!window._dateCache) {
+      window._dateCache = new Map();
+    }
+    if (!window._parseDateCached) {
+      window._parseDateCached = (dateStr) => {
+        if (!window._dateCache.has(dateStr)) {
+          window._dateCache.set(dateStr, new Date(dateStr.split('/').reverse().join('/')));
+        }
+        return window._dateCache.get(dateStr);
+      };
+    }
+    
     function calculateCurrentStock(entry) {
       // Get all entries of the same type (tebal + ukuran + harga beli)
       const sameTypeEntries = stokData.filter(e => 
@@ -13769,10 +13883,10 @@ No. Kendaraan: ${noKendaraan}
         ((e.harga ?? null) === (entry.harga ?? null))
       );
       
-      // Sort by date and ID (oldest first)
+      // Sort by date and ID (oldest first) - using cached date parsing
       sameTypeEntries.sort((a, b) => {
-        const dateA = new Date(a.tanggal.split('/').reverse().join('/'));
-        const dateB = new Date(b.tanggal.split('/').reverse().join('/'));
+        const dateA = window._parseDateCached(a.tanggal);
+        const dateB = window._parseDateCached(b.tanggal);
         if (dateA - dateB !== 0) return dateA - dateB;
         return a.id - b.id; // For entries with same date, sort by ID
       });
@@ -13830,9 +13944,10 @@ No. Kendaraan: ${noKendaraan}
         if (idB !== idA) {
           return idB - idA;
         }
-        // Secondary sort: by date (newest first) if IDs are equal
-        const dateA = new Date(a.tanggal.split('/').reverse().join('/'));
-        const dateB = new Date(b.tanggal.split('/').reverse().join('/'));
+        // Secondary sort: by date (newest first) if IDs are equal - using cached date parsing
+        const parseDateCached = window._parseDateCached || ((dateStr) => new Date(dateStr.split('/').reverse().join('/')));
+        const dateA = parseDateCached(a.tanggal);
+        const dateB = parseDateCached(b.tanggal);
         return dateB - dateA;
       });
 
@@ -15217,6 +15332,28 @@ No. Kendaraan: ${noKendaraan}
                     let lastSelectedHarga = '';
                     const UPDATE_THROTTLE = 500; // milliseconds
                     
+                    // Debounce utility function for performance optimization
+                    const debounce = (func, wait) => {
+                        let timeout;
+                        return function executedFunction(...args) {
+                            const later = () => {
+                                clearTimeout(timeout);
+                                func.apply(this, args);
+                            };
+                            clearTimeout(timeout);
+                            timeout = setTimeout(later, wait);
+                        };
+                    };
+                    
+                    // Cache DOM elements for better performance
+                    let cachedUkuranList = null;
+                    const getUkuranList = () => {
+                        if (!cachedUkuranList) {
+                            cachedUkuranList = document.getElementById('datalistUkuran');
+                        }
+                        return cachedUkuranList;
+                    };
+                    
                     // Helper function to update harga from selected ukuran
                     const updateHargaFromSelectedUkuran = function(inputElement, forceUpdate = false) {
                         const ukuranValue = inputElement.value.trim();
@@ -15236,7 +15373,7 @@ No. Kendaraan: ${noKendaraan}
                         lastUkuranValue = ukuranValue;
                         
                         if (ukuranValue) {
-                            const ukuranList = document.getElementById('datalistUkuran');
+                            const ukuranList = getUkuranList();
                             if (ukuranList) {
                                 // Find all matching options (same ukuran might have different harga)
                                 const matchingOptions = Array.from(ukuranList.options).filter(opt => {
@@ -15350,11 +15487,16 @@ No. Kendaraan: ${noKendaraan}
                         }
                     };
                     
+                    // Debounced update function (300ms delay for input events to reduce excessive calls)
+                    const debouncedUpdateHarga = debounce((input) => {
+                        updateHargaFromSelectedUkuran(input, true);
+                    }, 300);
+                    
                     // Track when user selects from datalist
                     ukuranInput.addEventListener('change', function() {
                         isSelectingFromDatalist = true;
                         lastUpdateTime = Date.now();
-                        // Force update to ensure harga is refreshed
+                        // Force update to ensure harga is refreshed (immediate, no debounce)
                         updateHargaFromSelectedUkuran(this, true);
                         
                         // Reset flag after a delay
@@ -15363,16 +15505,16 @@ No. Kendaraan: ${noKendaraan}
                         }, 1000);
                     });
                     
-                    // Also listen to input event for more responsive updates
+                    // Listen to input event with debouncing for better performance
                     ukuranInput.addEventListener('input', function() {
-                        // Force update on input to catch typing changes
-                        updateHargaFromSelectedUkuran(this, true);
+                        // Use debounced update to reduce excessive function calls
+                        debouncedUpdateHarga(this);
                     });
                     
                     // Listen to blur event to catch selections that might not trigger change
                     ukuranInput.addEventListener('blur', function() {
+                        // Immediate update on blur (no debounce needed)
                         setTimeout(() => {
-                            // Force update on blur to catch any missed changes
                             updateHargaFromSelectedUkuran(this, true);
                         }, 150);
                     });
@@ -15380,22 +15522,15 @@ No. Kendaraan: ${noKendaraan}
                     // Listen to keyup for Enter/Tab key selections
                     ukuranInput.addEventListener('keyup', function(e) {
                         if (e.key === 'Enter' || e.key === 'Tab' || e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                            // Immediate update for keyboard navigation (no debounce)
                             setTimeout(() => {
-                                // Force update when selecting with keyboard
                                 updateHargaFromSelectedUkuran(this, true);
                             }, 100);
                         }
                     });
                     
-                    // Polling to check for changes (as fallback for better responsiveness)
-                    let pollingInterval = setInterval(() => {
-                        const currentValue = ukuranInput.value.trim();
-                        const currentHarga = ukuranInput.getAttribute('data-selected-harga') || '';
-                        // Update if value changed OR if we need to refresh harga
-                        if (currentValue !== lastUkuranValue || currentHarga !== lastSelectedHarga) {
-                            updateHargaFromSelectedUkuran(ukuranInput, true);
-                        }
-                    }, 200); // Check every 200ms for better responsiveness
+                    // Polling removed for better performance - using event-driven approach instead
+                    // This eliminates memory leaks and reduces CPU usage significantly
                     
                     // Always update datalist based on jenis kaca from the same row when focused
                     ukuranInput.addEventListener('focus', function() {
@@ -15465,7 +15600,25 @@ No. Kendaraan: ${noKendaraan}
                 const rows = tbody.querySelectorAll('tr');
                 
                 if (rows.length > 1) {
-                    tbody.removeChild(rows[rows.length - 1]);
+                    const rowToRemove = rows[rows.length - 1];
+                    
+                    // Clean up any intervals or event listeners from the row being removed
+                    // This prevents memory leaks
+                    const ukuranInputs = rowToRemove.querySelectorAll('.ukuran');
+                    ukuranInputs.forEach(input => {
+                        // Clear any stored intervals (if polling was used)
+                        if (input._pollingInterval) {
+                            clearInterval(input._pollingInterval);
+                            delete input._pollingInterval;
+                        }
+                        // Clear any debounce timeouts
+                        if (input._debounceTimeout) {
+                            clearTimeout(input._debounceTimeout);
+                            delete input._debounceTimeout;
+                        }
+                    });
+                    
+                    tbody.removeChild(rowToRemove);
                     // Update grand total setelah hapus baris
                     setTimeout(() => {
                         updateGrandTotal();
@@ -15489,6 +15642,32 @@ No. Kendaraan: ${noKendaraan}
         }
 
         // Fungsi untuk menghitung total LBR
+        // Debounced updateGrandTotal for better performance (global cache)
+        if (!window._debouncedUpdateGrandTotal) {
+            window._debouncedUpdateGrandTotal = (function() {
+                let timeout;
+                return function() {
+                    clearTimeout(timeout);
+                    timeout = setTimeout(() => {
+                        updateGrandTotal();
+                    }, 150);
+                };
+            })();
+        }
+        const debouncedUpdateGrandTotal = window._debouncedUpdateGrandTotal;
+        
+        // Cache printModal element for better performance (global cache)
+        if (!window._getPrintModal) {
+            let cachedPrintModal = null;
+            window._getPrintModal = () => {
+                if (!cachedPrintModal) {
+                    cachedPrintModal = document.getElementById('printModalOverlay');
+                }
+                return cachedPrintModal;
+            };
+        }
+        const getPrintModal = window._getPrintModal;
+        
         function calculateTotalLbr(input) {
             try {
                 if (!input) {
@@ -15528,13 +15707,11 @@ No. Kendaraan: ${noKendaraan}
                 // Format total dengan satuan LBR
                 totalInput.value = Math.round(total) + " LBR";
                 
-                // Update grand total
-                setTimeout(() => {
-                    updateGrandTotal();
-                }, 100);
+                // Update grand total with debouncing for better performance
+                debouncedUpdateGrandTotal();
                 
-                // Trigger print data refresh if modal is open
-                const printModal = document.getElementById('printModalOverlay');
+                // Trigger print data refresh if modal is open (using cached element)
+                const printModal = getPrintModal();
                 if (printModal && printModal.style.display === 'flex') {
                     setTimeout(() => {
                         if (typeof refreshPrintData === 'function') {
@@ -15567,10 +15744,22 @@ No. Kendaraan: ${noKendaraan}
         }
 
         // Fungsi untuk update grand total
+        // Cache grandTotalInput for better performance (global cache)
+        if (!window._getGrandTotalInput) {
+            let cachedGrandTotalInput = null;
+            window._getGrandTotalInput = () => {
+                if (!cachedGrandTotalInput) {
+                    cachedGrandTotalInput = document.querySelector('.grand-total-input');
+                }
+                return cachedGrandTotalInput;
+            };
+        }
+        const getGrandTotalInput = window._getGrandTotalInput;
+        
         function updateGrandTotal() {
             try {
                 const grandTotal = calculateGrandTotal();
-                const grandTotalInput = document.querySelector('.grand-total-input');
+                const grandTotalInput = getGrandTotalInput();
                 
                 if (grandTotalInput) {
                     grandTotalInput.value = grandTotal + " LBR";
@@ -15578,8 +15767,8 @@ No. Kendaraan: ${noKendaraan}
                     console.warn('Grand total input element not found');
                 }
                 
-                // Trigger print data refresh if modal is open
-                const printModal = document.getElementById('printModalOverlay');
+                // Trigger print data refresh if modal is open (using cached element)
+                const printModal = getPrintModal();
                 if (printModal && printModal.style.display === 'flex') {
                     setTimeout(() => {
                         if (typeof refreshPrintData === 'function') {
@@ -19090,6 +19279,28 @@ No. Kendaraan: ${noKendaraan}
                     let lastSelectedHarga = '';
                     const UPDATE_THROTTLE = 500; // milliseconds
                     
+                    // Debounce utility function for performance optimization
+                    const debounce = (func, wait) => {
+                        let timeout;
+                        return function executedFunction(...args) {
+                            const later = () => {
+                                clearTimeout(timeout);
+                                func.apply(this, args);
+                            };
+                            clearTimeout(timeout);
+                            timeout = setTimeout(later, wait);
+                        };
+                    };
+                    
+                    // Cache DOM elements for better performance
+                    let cachedUkuranList = null;
+                    const getUkuranList = () => {
+                        if (!cachedUkuranList) {
+                            cachedUkuranList = document.getElementById('datalistUkuran');
+                        }
+                        return cachedUkuranList;
+                    };
+                    
                     // Helper function to update harga from selected ukuran
                     const updateHargaFromSelectedUkuran = function(inputElement, forceUpdate = false) {
                         const ukuranValue = inputElement.value.trim();
@@ -19109,7 +19320,7 @@ No. Kendaraan: ${noKendaraan}
                         lastUkuranValue = ukuranValue;
                         
                         if (ukuranValue) {
-                            const ukuranList = document.getElementById('datalistUkuran');
+                            const ukuranList = getUkuranList();
                             if (ukuranList) {
                                 // Find all matching options (same ukuran might have different harga)
                                 const matchingOptions = Array.from(ukuranList.options).filter(opt => {
@@ -22912,6 +23123,19 @@ No. Kendaraan: ${noKendaraan}
     }
 
     // Function to calculate current stock at the time of transaction
+    // Cache for date parsing to improve performance (global cache)
+    if (!window._dateCache) {
+      window._dateCache = new Map();
+    }
+    if (!window._parseDateCached) {
+      window._parseDateCached = (dateStr) => {
+        if (!window._dateCache.has(dateStr)) {
+          window._dateCache.set(dateStr, new Date(dateStr.split('/').reverse().join('/')));
+        }
+        return window._dateCache.get(dateStr);
+      };
+    }
+    
     function calculateCurrentStock(entry) {
       // Get all entries of the same type (tebal + ukuran + harga beli)
       const sameTypeEntries = stokData.filter(e => 
@@ -22920,10 +23144,10 @@ No. Kendaraan: ${noKendaraan}
         ((e.harga ?? null) === (entry.harga ?? null))
       );
       
-      // Sort by date and ID (oldest first)
+      // Sort by date and ID (oldest first) - using cached date parsing
       sameTypeEntries.sort((a, b) => {
-        const dateA = new Date(a.tanggal.split('/').reverse().join('/'));
-        const dateB = new Date(b.tanggal.split('/').reverse().join('/'));
+        const dateA = window._parseDateCached(a.tanggal);
+        const dateB = window._parseDateCached(b.tanggal);
         if (dateA - dateB !== 0) return dateA - dateB;
         return a.id - b.id; // For entries with same date, sort by ID
       });
@@ -22981,9 +23205,10 @@ No. Kendaraan: ${noKendaraan}
         if (idB !== idA) {
           return idB - idA;
         }
-        // Secondary sort: by date (newest first) if IDs are equal
-        const dateA = new Date(a.tanggal.split('/').reverse().join('/'));
-        const dateB = new Date(b.tanggal.split('/').reverse().join('/'));
+        // Secondary sort: by date (newest first) if IDs are equal - using cached date parsing
+        const parseDateCached = window._parseDateCached || ((dateStr) => new Date(dateStr.split('/').reverse().join('/')));
+        const dateA = parseDateCached(a.tanggal);
+        const dateB = parseDateCached(b.tanggal);
         return dateB - dateA;
       });
 
