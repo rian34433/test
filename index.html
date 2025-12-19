@@ -4441,8 +4441,6 @@
                 <div class="tab-pane" id="quickListTab">
                     <div class="quick-list-container">
                         <div class="quick-list-header">
-                            <h4>📋 Daftar Toko Tersedia</h4>
-                            <p>Klik pada toko untuk mengisi form otomatis</p>
                             <div class="quick-list-actions">
                                 <button type="button" class="btn-export-toko" onclick="exportTokoListToJSON()" title="Export daftar toko ke file JSON">⬇️ Export Toko</button>
                                 <button type="button" class="btn-import-toko" onclick="document.getElementById('importTokoFileInput').click()" title="Import daftar toko dari file JSON">⬆️ Import Toko</button>
@@ -11026,9 +11024,9 @@ No. Kendaraan: ${noKendaraan}
                                 const hargaText = item.harga.length === 1 
                                     ? `Rp ${item.harga[0].toLocaleString('id-ID')}`
                                     : item.harga.map(h => `Rp ${h.toLocaleString('id-ID')}`).join(' / ');
-                                stockInfo = ` (Harga: ${hargaText}, Sisa: ${item.sisa})`;
+                                stockInfo = ` (Harga: ${hargaText}, Sisa: ${item.sisa.toLocaleString('id-ID')})`;
                             } else {
-                                stockInfo = ` (Sisa: ${item.sisa})`;
+                                stockInfo = ` (Sisa: ${item.sisa.toLocaleString('id-ID')})`;
                             }
                             displayValue = `${item.display}${stockInfo}`;
                         }
@@ -11179,9 +11177,9 @@ No. Kendaraan: ${noKendaraan}
                                 const hargaText = item.harga.length === 1 
                                     ? `Rp ${item.harga[0].toLocaleString('id-ID')}`
                                     : item.harga.map(h => `Rp ${h.toLocaleString('id-ID')}`).join(' / ');
-                                stockInfo = ` (Harga: ${hargaText}, Sisa: ${item.sisa})`;
+                                stockInfo = ` (Harga: ${hargaText}, Sisa: ${item.sisa.toLocaleString('id-ID')})`;
                             } else {
-                                stockInfo = ` (Sisa: ${item.sisa})`;
+                                stockInfo = ` (Sisa: ${item.sisa.toLocaleString('id-ID')})`;
                             }
                             displayValue = `${item.display}${stockInfo}`;
                         }
@@ -12696,9 +12694,9 @@ No. Kendaraan: ${noKendaraan}
           // Format: "Jenis Kaca : Ukuran (Harga: Rp X, Sisa: Y)"
           let displayText = `${data.ukuran}`;
           if (data.hargaMasuk !== undefined && data.hargaMasuk > 0) {
-            displayText += ` (Harga: Rp ${data.hargaMasuk.toLocaleString('id-ID')}, Sisa: ${data.totalSisa})`;
+            displayText += ` (Harga: Rp ${data.hargaMasuk.toLocaleString('id-ID')}, Sisa: ${data.totalSisa.toLocaleString('id-ID')})`;
           } else {
-            displayText += ` (Sisa: ${data.totalSisa})`;
+            displayText += ` (Sisa: ${data.totalSisa.toLocaleString('id-ID')})`;
           }
           
           option.textContent = displayText;
@@ -12768,9 +12766,9 @@ No. Kendaraan: ${noKendaraan}
           // Format: "Ukuran (Harga: Rp X, Sisa: Y)"
           let displayText = data.ukuran;
           if (data.hargaMasuk !== undefined && data.hargaMasuk > 0) {
-            displayText += ` (Harga: Rp ${data.hargaMasuk.toLocaleString('id-ID')}, Sisa: ${data.totalSisa})`;
+            displayText += ` (Harga: Rp ${data.hargaMasuk.toLocaleString('id-ID')}, Sisa: ${data.totalSisa.toLocaleString('id-ID')})`;
           } else {
-            displayText += ` (Sisa: ${data.totalSisa})`;
+            displayText += ` (Sisa: ${data.totalSisa.toLocaleString('id-ID')})`;
           }
           
           option.textContent = displayText;
@@ -20155,9 +20153,9 @@ No. Kendaraan: ${noKendaraan}
                                 const hargaText = item.harga.length === 1 
                                     ? `Rp ${item.harga[0].toLocaleString('id-ID')}`
                                     : item.harga.map(h => `Rp ${h.toLocaleString('id-ID')}`).join(' / ');
-                                stockInfo = ` (Harga: ${hargaText}, Sisa: ${item.sisa})`;
+                                stockInfo = ` (Harga: ${hargaText}, Sisa: ${item.sisa.toLocaleString('id-ID')})`;
                             } else {
-                                stockInfo = ` (Sisa: ${item.sisa})`;
+                                stockInfo = ` (Sisa: ${item.sisa.toLocaleString('id-ID')})`;
                             }
                             displayValue = `${item.display}${stockInfo}`;
                         }
@@ -20308,9 +20306,9 @@ No. Kendaraan: ${noKendaraan}
                                 const hargaText = item.harga.length === 1 
                                     ? `Rp ${item.harga[0].toLocaleString('id-ID')}`
                                     : item.harga.map(h => `Rp ${h.toLocaleString('id-ID')}`).join(' / ');
-                                stockInfo = ` (Harga: ${hargaText}, Sisa: ${item.sisa})`;
+                                stockInfo = ` (Harga: ${hargaText}, Sisa: ${item.sisa.toLocaleString('id-ID')})`;
                             } else {
-                                stockInfo = ` (Sisa: ${item.sisa})`;
+                                stockInfo = ` (Sisa: ${item.sisa.toLocaleString('id-ID')})`;
                             }
                             displayValue = `${item.display}${stockInfo}`;
                         }
@@ -21670,9 +21668,9 @@ No. Kendaraan: ${noKendaraan}
           // Format: "Jenis Kaca : Ukuran (Harga: Rp X, Sisa: Y)"
           let displayText = `${data.ukuran}`;
           if (data.hargaMasuk !== undefined && data.hargaMasuk > 0) {
-            displayText += ` (Harga: Rp ${data.hargaMasuk.toLocaleString('id-ID')}, Sisa: ${data.totalSisa})`;
+            displayText += ` (Harga: Rp ${data.hargaMasuk.toLocaleString('id-ID')}, Sisa: ${data.totalSisa.toLocaleString('id-ID')})`;
           } else {
-            displayText += ` (Sisa: ${data.totalSisa})`;
+            displayText += ` (Sisa: ${data.totalSisa.toLocaleString('id-ID')})`;
           }
           
           option.textContent = displayText;
@@ -21742,9 +21740,9 @@ No. Kendaraan: ${noKendaraan}
           // Format: "Ukuran (Harga: Rp X, Sisa: Y)"
           let displayText = data.ukuran;
           if (data.hargaMasuk !== undefined && data.hargaMasuk > 0) {
-            displayText += ` (Harga: Rp ${data.hargaMasuk.toLocaleString('id-ID')}, Sisa: ${data.totalSisa})`;
+            displayText += ` (Harga: Rp ${data.hargaMasuk.toLocaleString('id-ID')}, Sisa: ${data.totalSisa.toLocaleString('id-ID')})`;
           } else {
-            displayText += ` (Sisa: ${data.totalSisa})`;
+            displayText += ` (Sisa: ${data.totalSisa.toLocaleString('id-ID')})`;
           }
           
           option.textContent = displayText;
