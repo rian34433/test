@@ -3515,12 +3515,12 @@
 
     /* Table Action Buttons */
     .row-action-btn {
-      padding: 5px 8px;
+      padding: 5px 0px;
       color: white;
       border: none;
-      border-radius: 4px;
+      border-radius: 0px;
       cursor: pointer;
-      margin: 2px;
+      margin: 1px;
       box-shadow: none;
     }
 
@@ -3550,7 +3550,8 @@
 
     .action-buttons-container {
       display: flex;
-      gap: 5px;
+      gap: 0px;
+      flex-direction: column-reverse;
     }
 
     /* Edit Form Styles */
@@ -4014,12 +4015,12 @@
 
     /* Table Action Buttons */
     .row-action-btn {
-      padding: 5px 8px;
+      padding: 5px 0px;
       color: white;
       border: none;
-      border-radius: 4px;
+      border-radius: 0px;
       cursor: pointer;
-      margin: 2px;
+      margin: 1px;
       box-shadow: none;
     }
 
@@ -4049,7 +4050,8 @@
 
     .action-buttons-container {
       display: flex;
-      gap: 5px;
+      gap: 0px;
+      flex-direction: column-reverse;
     }
 
     /* Edit Form Styles */
@@ -4238,8 +4240,11 @@
                                         id="supir" 
                                         name="supir" 
                                         placeholder="Nama Supir"
+                                        list="datalistSupir"
+                                        autocomplete="off"
                                         required
                                     >
+                                    <datalist id="datalistSupir"></datalist>
                                 </div>
                                 
                                 <div class="form-group">
@@ -4248,8 +4253,11 @@
                                         id="noKendaraan" 
                                         name="noKendaraan" 
                                         placeholder="No. Kendaraan"
+                                        list="datalistNoKendaraan"
+                                        autocomplete="off"
                                         required
                                     >
+                                    <datalist id="datalistNoKendaraan"></datalist>
                                 </div>
                             </div>
                         </div>
@@ -4677,35 +4685,34 @@
                     }
                 }
                 
-                // If editing, delete old transactions with the same nota (from original entry)
+                // If editing, delete old transactions with the same logEntryId (more precise than nota)
                 // IMPORTANT: Do this AFTER loading stokData to ensure we have the latest data
-                // Use originalNomorSJForDeletion which was saved before editingLogEntry was cleared
+                // Use lastLogEntryId which is set when log entry is created/edited
+                const currentLogEntryId = lastLogEntryId;
                 const originalNomorSJ = originalNomorSJForDeletion || (editingLogEntry && editingLogEntry.entry ? editingLogEntry.entry.data?.nomorSJ || '' : '');
                 const newNomorSJ = nomorSJ || '';
                 
-                if (originalNomorSJ) {
-                    // Find and delete all transactions with this nota
+                if (currentLogEntryId) {
+                    // Find and delete all transactions with this logEntryId (most precise method)
                     // Make sure we're working with the actual stokData array
                     const currentStokData = window.stokData || [];
                     
                     // Debug: Log all transactions to see what we're working with
-                    console.log(`🔍 Searching for transactions with nota: "${originalNomorSJ}"`);
+                    console.log(`🔍 Searching for transactions with logEntryId: "${currentLogEntryId}"`);
                     console.log(`📊 Total stokData entries: ${currentStokData.length}`);
                     
                     const transactionsToDelete = currentStokData.filter(entry => {
-                        const entryNota = entry.nota ? entry.nota.trim() : '';
-                        const targetNota = originalNomorSJ.trim();
-                        const matches = entryNota === targetNota;
+                        const matches = entry.logEntryId === currentLogEntryId;
                         
                         if (matches) {
-                            console.log(`  ✓ Found matching transaction: ID=${entry.id}, nota="${entryNota}", tebal="${entry.tebal}", ukuran="${entry.ukuran}", keluar=${entry.keluar}`);
+                            console.log(`  ✓ Found matching transaction: ID=${entry.id}, logEntryId="${entry.logEntryId}", nota="${entry.nota}", tebal="${entry.tebal}", ukuran="${entry.ukuran}", keluar=${entry.keluar}`);
                         }
                         
                         return matches;
                     });
                     
                     if (transactionsToDelete.length > 0) {
-                        console.log(`🗑️ Deleting ${transactionsToDelete.length} old transactions for nota: ${originalNomorSJ}`);
+                        console.log(`🗑️ Deleting ${transactionsToDelete.length} old transactions for logEntryId: ${currentLogEntryId}`);
                         
                         // Delete from IndexedDB first, then remove from array
                         for (const transaction of transactionsToDelete) {
@@ -4755,11 +4762,46 @@
                         
                         console.log('✅ Old transactions deleted and UI updated');
                     } else {
-                        console.log(`ℹ️ No old transactions found for nota: ${originalNomorSJ}`);
-                        // Also check if new nota is different
-                        if (newNomorSJ && newNomorSJ !== originalNomorSJ) {
-                            console.log(`ℹ️ Note: New nota "${newNomorSJ}" is different from original "${originalNomorSJ}"`);
+                        console.log(`ℹ️ No old transactions found for logEntryId: ${currentLogEntryId}`);
+                    }
+                } else if (originalNomorSJ) {
+                    // Fallback: if logEntryId not available, use nota (for backward compatibility with old data)
+                    const currentStokData = window.stokData || [];
+                    const transactionsToDelete = currentStokData.filter(entry => {
+                        const entryNota = entry.nota ? entry.nota.trim() : '';
+                        const targetNota = originalNomorSJ.trim();
+                        return entryNota === targetNota && !entry.logEntryId; // Only delete if no logEntryId (old data)
+                    });
+                    
+                    if (transactionsToDelete.length > 0) {
+                        console.log(`🗑️ Deleting ${transactionsToDelete.length} old transactions (without logEntryId) for nota: ${originalNomorSJ}`);
+                        
+                        for (const transaction of transactionsToDelete) {
+                            let deleteFunc = null;
+                            if (typeof window.deleteEntryFromDB === 'function') {
+                                deleteFunc = window.deleteEntryFromDB;
+                            } else if (typeof deleteEntryFromDB === 'function') {
+                                deleteFunc = deleteEntryFromDB;
+                            }
+                            
+                            if (deleteFunc) {
+                                try {
+                                    await deleteFunc(transaction.id);
+                                } catch (error) {
+                                    console.error(`Error deleting transaction ID ${transaction.id} from DB:`, error);
+                                }
+                            }
+                            
+                            const index = window.stokData.findIndex(e => e.id === transaction.id);
+                            if (index !== -1) {
+                                window.stokData.splice(index, 1);
+                            }
                         }
+                        
+                        if (typeof updateStokTable === 'function') updateStokTable();
+                        if (typeof updateTotalSisa === 'function') updateTotalSisa();
+                        if (typeof updateJenisKacaList === 'function') updateJenisKacaList();
+                        if (typeof updateUkuranKacaList === 'function') updateUkuranKacaList();
                     }
                 }
                 
@@ -4861,7 +4903,8 @@
                         harga: hargaBeli > 0 ? hargaBeli : undefined,
                         hargaJual: hargaJual > 0 ? hargaJual : undefined,
                         masuk: 0,
-                        keluar: totalLbr
+                        keluar: totalLbr,
+                        logEntryId: lastLogEntryId || null // Link to log entry
                     };
                     
                     transactions.push(transaction);
@@ -4886,12 +4929,23 @@
                         }
                     }
                     
+                    // Sync stokData local variable with window.stokData
+                    if (typeof window.stokData !== 'undefined' && Array.isArray(window.stokData)) {
+                        if (typeof stokData !== 'undefined') {
+                            // Update local stokData to match window.stokData
+                            stokData = [...window.stokData];
+                        }
+                    }
+                    
                     // Update stok table and related UI if functions are available
                     if (typeof updateStokTable === 'function') {
                         updateStokTable();
                     }
                     if (typeof updateTotalSisa === 'function') {
                         updateTotalSisa();
+                    }
+                    if (typeof updateNamaTokoList === 'function') {
+                        updateNamaTokoList();
                     }
                     if (typeof updateJenisKacaList === 'function') {
                         updateJenisKacaList();
@@ -8914,6 +8968,8 @@ No. Kendaraan: ${noKendaraan}
         let lastNomorSJ = '';
         // Track entry being edited
         let editingLogEntry = null;
+        // Track last log entry ID for linking stok transactions
+        let lastLogEntryId = null;
         try {
             const saved = storageManager.load('lastNomorSJ');
             lastNomorSJ = (saved || '').trim();
@@ -8929,6 +8985,7 @@ No. Kendaraan: ${noKendaraan}
                     inputLogHistory = saved;
                     console.log('✅ Loaded input log from storage:', inputLogHistory.length, 'entries');
                     renderInputLog();
+                    updateSupirDanKendaraanSuggestions();
                 } else {
                     console.log('ℹ️ No input log found in storage');
                 }
@@ -8945,6 +9002,7 @@ No. Kendaraan: ${noKendaraan}
                 console.log('💾 Input log saved to storage:', inputLogHistory.length, 'entries');
                 // Update suggestion datalists whenever log changes
                 updateKacaSuggestionsFromLogs();
+                updateSupirDanKendaraanSuggestions();
                 if (typeof window.refreshNomorSJWarningNow === 'function') {
                     window.refreshNomorSJWarningNow();
                 }
@@ -8988,10 +9046,17 @@ No. Kendaraan: ${noKendaraan}
                 }
             };
             
+            // Store log entry ID for linking stok transactions
+            lastLogEntryId = logEntry.id;
+            
             // Check if we're editing an existing entry
             if (editingLogEntry) {
                 // Store original nomorSJ before clearing editingLogEntry (needed for stock transaction deletion)
                 originalNomorSJForDeletion = editingLogEntry.entry.data?.nomorSJ || null;
+                
+                // Preserve the original log entry ID when editing
+                logEntry.id = editingLogEntry.entry.id;
+                lastLogEntryId = logEntry.id;
                 
                 // Replace the original entry with the new one
                 inputLogHistory[editingLogEntry.index] = logEntry;
@@ -10183,10 +10248,78 @@ No. Kendaraan: ${noKendaraan}
         }
 
         // Delete a specific log entry
-        function deleteLogEntry(index) {
+        async function deleteLogEntry(index) {
             const entry = inputLogHistory[index];
             if (!entry) return;
             if (confirm('Hapus log ini? Tindakan ini tidak dapat dibatalkan.')) {
+                // Get log entry ID and nomorSJ from the entry to delete related stok transactions
+                const logEntryId = entry.id;
+                const nomorSJ = entry.data?.nomorSJ || '';
+                
+                // Delete related stok transactions if logEntryId exists
+                if (logEntryId) {
+                    try {
+                        // Ensure stokData is loaded
+                        if (typeof window.stokData === 'undefined' || !Array.isArray(window.stokData)) {
+                            if (typeof loadData === 'function') {
+                                await loadData();
+                            } else {
+                                window.stokData = [];
+                            }
+                        }
+                        
+                        // Find all stok transactions with matching logEntryId (more precise than nota)
+                        const currentStokData = window.stokData || [];
+                        const transactionsToDelete = currentStokData.filter(stokEntry => {
+                            return stokEntry.logEntryId === logEntryId;
+                        });
+                        
+                        if (transactionsToDelete.length > 0) {
+                            // Delete from IndexedDB and array
+                            for (const transaction of transactionsToDelete) {
+                                // Delete from IndexedDB
+                                let deleteFunc = null;
+                                if (typeof window.deleteEntryFromDB === 'function') {
+                                    deleteFunc = window.deleteEntryFromDB;
+                                } else if (typeof deleteEntryFromDB === 'function') {
+                                    deleteFunc = deleteEntryFromDB;
+                                }
+                                
+                                if (deleteFunc) {
+                                    try {
+                                        await deleteFunc(transaction.id);
+                                    } catch (error) {
+                                        console.error(`Error deleting transaction ID ${transaction.id} from DB:`, error);
+                                    }
+                                }
+                                
+                                // Remove from stokData array
+                                const stokIndex = window.stokData.findIndex(e => e.id === transaction.id);
+                                if (stokIndex !== -1) {
+                                    window.stokData.splice(stokIndex, 1);
+                                }
+                            }
+                            
+                            // Update UI
+                            if (typeof updateStokTable === 'function') {
+                                updateStokTable();
+                            }
+                            if (typeof updateTotalSisa === 'function') {
+                                updateTotalSisa();
+                            }
+                            if (typeof updateJenisKacaList === 'function') {
+                                updateJenisKacaList();
+                            }
+                            if (typeof updateUkuranKacaList === 'function') {
+                                updateUkuranKacaList();
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error deleting related stok transactions:', error);
+                    }
+                }
+                
+                // Delete the log entry
                 inputLogHistory.splice(index, 1);
                 saveInputLogToStorage();
                 renderInputLog();
@@ -10215,6 +10348,10 @@ No. Kendaraan: ${noKendaraan}
             resetLogSearchFilter();
             // Build initial suggestions (once after initial log load)
             updateKacaSuggestionsFromLogs();
+            // Update supir and kendaraan suggestions with a small delay to ensure data is loaded
+            setTimeout(function() {
+                updateSupirDanKendaraanSuggestions();
+            }, 100);
             // Disable browser autocomplete on existing inputs to avoid duplicate dropdowns
             document.querySelectorAll('input.jenis-kaca, input.ukuran').forEach(el => {
                 el.setAttribute('autocomplete', 'off');
@@ -10227,6 +10364,22 @@ No. Kendaraan: ${noKendaraan}
             if (restoreInput) {
                 restoreInput.setAttribute('multiple', 'multiple');
                 console.log('Restore input multiple attribute set:', restoreInput.multiple);
+            }
+            
+            // Add event listeners to update suggestions when input fields are focused
+            const supirInput = document.getElementById('supir');
+            const noKendaraanInput = document.getElementById('noKendaraan');
+            
+            if (supirInput) {
+                supirInput.addEventListener('focus', function() {
+                    updateSupirDanKendaraanSuggestions();
+                });
+            }
+            
+            if (noKendaraanInput) {
+                noKendaraanInput.addEventListener('focus', function() {
+                    updateSupirDanKendaraanSuggestions();
+                });
             }
         });
 
@@ -11016,7 +11169,6 @@ No. Kendaraan: ${noKendaraan}
                         return `<option value="${item.replace(/"/g, '&quot;')}"></option>`;
                     } else {
                         // From stokData (with stock info)
-                        let displayValue = item.display;
                         let stockInfo = '';
                         
                         if (item.sisa > 0) {
@@ -11024,14 +11176,14 @@ No. Kendaraan: ${noKendaraan}
                                 const hargaText = item.harga.length === 1 
                                     ? `Rp ${item.harga[0].toLocaleString('id-ID')}`
                                     : item.harga.map(h => `Rp ${h.toLocaleString('id-ID')}`).join(' / ');
-                                stockInfo = ` (Harga: ${hargaText}, Sisa: ${item.sisa.toLocaleString('id-ID')})`;
+                                stockInfo = `Harga: ${hargaText}, Sisa: ${item.sisa.toLocaleString('id-ID')}`;
                             } else {
-                                stockInfo = ` (Sisa: ${item.sisa.toLocaleString('id-ID')})`;
+                                stockInfo = `Sisa: ${item.sisa.toLocaleString('id-ID')}`;
                             }
-                            displayValue = `${item.display}${stockInfo}`;
                         }
                         
-                        return `<option value="${item.display.replace(/"/g, '&quot;')}" data-stock="${item.sisa}" data-harga="${item.harga ? item.harga.join(',') : ''}">${displayValue.replace(/"/g, '&quot;')}</option>`;
+                        // Value is jenis kaca (baris pertama), text content is stockInfo only (baris kedua)
+                        return `<option value="${item.display.replace(/"/g, '&quot;')}" data-stock="${item.sisa}" data-harga="${item.harga ? item.harga.join(',') : ''}">${stockInfo ? stockInfo.replace(/"/g, '&quot;') : item.display.replace(/"/g, '&quot;')}</option>`;
                     }
                 };
                 
@@ -11044,6 +11196,57 @@ No. Kendaraan: ${noKendaraan}
                 if (ukuranList) ukuranList.innerHTML = ukuranValues.map(buildOptionHTML).join('');
             } catch (e) {
                 console.warn('Failed updating kaca suggestions:', e);
+            }
+        }
+
+        // Function to update supir and noKendaraan suggestions from input log history
+        function updateSupirDanKendaraanSuggestions() {
+            try {
+                const supirSet = new Set();
+                const noKendaraanSet = new Set();
+
+                // Collect unique values from inputLogHistory
+                (inputLogHistory || []).forEach(entry => {
+                    const data = entry.data || {};
+                    if (data.supir) {
+                        const supirValue = String(data.supir).trim();
+                        if (supirValue) {
+                            supirSet.add(supirValue);
+                        }
+                    }
+                    if (data.noKendaraan) {
+                        const noKendaraanValue = String(data.noKendaraan).trim();
+                        if (noKendaraanValue) {
+                            noKendaraanSet.add(noKendaraanValue);
+                        }
+                    }
+                });
+
+                // Sort and create options
+                const supirValues = Array.from(supirSet).sort((a, b) => 
+                    a.toLowerCase().localeCompare(b.toLowerCase())
+                );
+                const noKendaraanValues = Array.from(noKendaraanSet).sort((a, b) => 
+                    a.toLowerCase().localeCompare(b.toLowerCase())
+                );
+
+                // Update datalists
+                const supirList = document.getElementById('datalistSupir');
+                const noKendaraanList = document.getElementById('datalistNoKendaraan');
+                
+                if (supirList) {
+                    supirList.innerHTML = supirValues.map(value => 
+                        `<option value="${value.replace(/"/g, '&quot;')}"></option>`
+                    ).join('');
+                }
+                
+                if (noKendaraanList) {
+                    noKendaraanList.innerHTML = noKendaraanValues.map(value => 
+                        `<option value="${value.replace(/"/g, '&quot;')}"></option>`
+                    ).join('');
+                }
+            } catch (e) {
+                // Silently handle errors
             }
         }
 
@@ -11169,7 +11372,6 @@ No. Kendaraan: ${noKendaraan}
                     if (typeof item === 'string') {
                         return `<option value="${item.replace(/"/g, '&quot;')}"></option>`;
                     } else {
-                        let displayValue = item.display;
                         let stockInfo = '';
                         
                         if (item.sisa > 0) {
@@ -11177,14 +11379,14 @@ No. Kendaraan: ${noKendaraan}
                                 const hargaText = item.harga.length === 1 
                                     ? `Rp ${item.harga[0].toLocaleString('id-ID')}`
                                     : item.harga.map(h => `Rp ${h.toLocaleString('id-ID')}`).join(' / ');
-                                stockInfo = ` (Harga: ${hargaText}, Sisa: ${item.sisa.toLocaleString('id-ID')})`;
+                                stockInfo = `Harga: ${hargaText}, Sisa: ${item.sisa.toLocaleString('id-ID')}`;
                             } else {
-                                stockInfo = ` (Sisa: ${item.sisa.toLocaleString('id-ID')})`;
+                                stockInfo = `Sisa: ${item.sisa.toLocaleString('id-ID')}`;
                             }
-                            displayValue = `${item.display}${stockInfo}`;
                         }
                         
-                        return `<option value="${item.display.replace(/"/g, '&quot;')}" data-stock="${item.sisa}" data-harga="${item.harga ? item.harga.join(',') : ''}">${displayValue.replace(/"/g, '&quot;')}</option>`;
+                        // Value is ukuran (baris pertama), text content is stockInfo only (baris kedua)
+                        return `<option value="${item.display.replace(/"/g, '&quot;')}" data-stock="${item.sisa}" data-harga="${item.harga ? item.harga.join(',') : ''}">${stockInfo ? stockInfo.replace(/"/g, '&quot;') : item.display.replace(/"/g, '&quot;')}</option>`;
                     }
                 };
 
@@ -11476,9 +11678,9 @@ No. Kendaraan: ${noKendaraan}
             const idx = findLogIndexById(logId);
             if (idx >= 0) editLogEntry(idx);
         }
-        function deleteLogEntryById(logId) {
+        async function deleteLogEntryById(logId) {
             const idx = findLogIndexById(logId);
-            if (idx >= 0) deleteLogEntry(idx);
+            if (idx >= 0) await deleteLogEntry(idx);
         }
 
         // Test function to verify new log display
@@ -11888,6 +12090,7 @@ No. Kendaraan: ${noKendaraan}
                                 console.log('✅ Loaded input log from IndexedDB:', inputLogHistory.length, 'entries');
                                 if (typeof renderInputLog === 'function') renderInputLog();
                                 if (typeof updateKacaSuggestionsFromLogs === 'function') updateKacaSuggestionsFromLogs();
+                                if (typeof updateSupirDanKendaraanSuggestions === 'function') updateSupirDanKendaraanSuggestions();
                                 if (typeof window.refreshNomorSJWarningNow === 'function') window.refreshNomorSJWarningNow();
                                 return;
                             }
@@ -11904,6 +12107,7 @@ No. Kendaraan: ${noKendaraan}
                             if (saved) {
                                 inputLogHistory = saved;
                                 if (typeof renderInputLog === 'function') renderInputLog();
+                                if (typeof updateSupirDanKendaraanSuggestions === 'function') updateSupirDanKendaraanSuggestions();
                             }
                         } catch (e) {
                             console.warn('Fallback localStorage load failed', e);
@@ -11916,6 +12120,7 @@ No. Kendaraan: ${noKendaraan}
                                 storageManager.save('inputLogHistory', inputLogHistory);
                             }
                             if (typeof updateKacaSuggestionsFromLogs === 'function') updateKacaSuggestionsFromLogs();
+                            if (typeof updateSupirDanKendaraanSuggestions === 'function') updateSupirDanKendaraanSuggestions();
                             if (typeof window.refreshNomorSJWarningNow === 'function') window.refreshNomorSJWarningNow();
                         } catch (e) {
                             console.warn('localStorage save fallback failed', e);
@@ -13606,9 +13811,19 @@ No. Kendaraan: ${noKendaraan}
       const tableBody = document.getElementById("stokTable").getElementsByTagName('tbody')[0];
       tableBody.innerHTML = ""; // Clear the table body
 
+      // Use window.stokData if available (for sync with surat jalan), otherwise use local stokData
+      const dataSource = (typeof window !== 'undefined' && typeof window.stokData !== 'undefined' && Array.isArray(window.stokData)) 
+        ? window.stokData 
+        : stokData;
+      
+      // Sync local stokData with window.stokData if available
+      if (typeof window !== 'undefined' && typeof window.stokData !== 'undefined' && Array.isArray(window.stokData)) {
+        stokData = [...window.stokData];
+      }
+
       // Sort by ID (newest first) - ID is created with Date.now() so higher ID = newer entry
       // This ensures the most recently added entries appear at the top
-      const sortedData = [...stokData].sort((a, b) => {
+      const sortedData = [...dataSource].sort((a, b) => {
         // Primary sort: by ID (newest first)
         const idA = a.id || 0;
         const idB = b.id || 0;
@@ -13642,20 +13857,26 @@ No. Kendaraan: ${noKendaraan}
           <td class="masuk">${entry.masuk.toLocaleString('id-ID')}</td>
           <td class="keluar">${entry.keluar.toLocaleString('id-ID')}</td>
           <td class="sisa">${currentStock.toLocaleString('id-ID')}</td>
-          <td>
+          <td style="padding-left: 25px;padding-right: 0px;padding-top: 5px;padding-bottom: 5px;">
             <div class="action-buttons-container">
               ${isPembelian ? `
               <button class="row-action-btn edit-btn" onclick="editEntry(${entry.id})" title="Edit data pembelian">
                 <i class="fas fa-edit"></i>
               </button>
               ` : `
-              <button class="row-action-btn edit-btn" style="opacity: 0.3; cursor: not-allowed;" disabled title="Edit penjualan dilakukan di log surat jalan">
+              <button class="row-action-btn edit-btn" style="display: none;" title="Edit penjualan dilakukan di log surat jalan">
                 <i class="fas fa-edit"></i>
               </button>
               `}
-              <button class="row-action-btn delete-btn" onclick="deleteEntry(${entry.id})">
+              ${isPembelian ? `
+              <button class="row-action-btn delete-btn" onclick="deleteEntry(${entry.id})" title="Hapus data pembelian">
                 <i class="fas fa-trash"></i>
               </button>
+              ` : `
+              <button class="row-action-btn delete-btn" style="display: none;" title="Hapus penjualan dilakukan di log surat jalan">
+                <i class="fas fa-trash"></i>
+              </button>
+              `}
             </div>
           </td>
         `;
@@ -13725,6 +13946,16 @@ No. Kendaraan: ${noKendaraan}
 
     // Function to delete an entry
     async function deleteEntry(id) {
+      const entry = stokData.find(item => item.id === id);
+      if (!entry) return;
+      
+      // Prevent deletion of penjualan entries (keluar > 0, masuk === 0)
+      // Penjualan entries should be deleted from log surat jalan
+      if (entry.keluar > 0 && entry.masuk === 0) {
+        alert('Data penjualan tidak dapat dihapus di sini. Silakan hapus di log surat jalan.');
+        return;
+      }
+      
       if (confirm("Apakah Anda yakin ingin menghapus data ini?")) {
         try {
           stokData = stokData.filter(entry => entry.id !== id);
@@ -18043,6 +18274,8 @@ No. Kendaraan: ${noKendaraan}
         let lastNomorSJ = '';
         // Track entry being edited
         let editingLogEntry = null;
+        // Track last log entry ID for linking stok transactions
+        let lastLogEntryId = null;
         try {
             const saved = storageManager.load('lastNomorSJ');
             lastNomorSJ = (saved || '').trim();
@@ -18058,6 +18291,7 @@ No. Kendaraan: ${noKendaraan}
                     inputLogHistory = saved;
                     console.log('✅ Loaded input log from storage:', inputLogHistory.length, 'entries');
                     renderInputLog();
+                    updateSupirDanKendaraanSuggestions();
                 } else {
                     console.log('ℹ️ No input log found in storage');
                 }
@@ -18074,6 +18308,7 @@ No. Kendaraan: ${noKendaraan}
                 console.log('💾 Input log saved to storage:', inputLogHistory.length, 'entries');
                 // Update suggestion datalists whenever log changes
                 updateKacaSuggestionsFromLogs();
+                updateSupirDanKendaraanSuggestions();
                 if (typeof window.refreshNomorSJWarningNow === 'function') {
                     window.refreshNomorSJWarningNow();
                 }
@@ -18117,10 +18352,17 @@ No. Kendaraan: ${noKendaraan}
                 }
             };
             
+            // Store log entry ID for linking stok transactions
+            lastLogEntryId = logEntry.id;
+            
             // Check if we're editing an existing entry
             if (editingLogEntry) {
                 // Store original nomorSJ before clearing editingLogEntry (needed for stock transaction deletion)
                 originalNomorSJForDeletion = editingLogEntry.entry.data?.nomorSJ || null;
+                
+                // Preserve the original log entry ID when editing
+                logEntry.id = editingLogEntry.entry.id;
+                lastLogEntryId = logEntry.id;
                 
                 // Replace the original entry with the new one
                 inputLogHistory[editingLogEntry.index] = logEntry;
@@ -19312,10 +19554,78 @@ No. Kendaraan: ${noKendaraan}
         }
 
         // Delete a specific log entry
-        function deleteLogEntry(index) {
+        async function deleteLogEntry(index) {
             const entry = inputLogHistory[index];
             if (!entry) return;
             if (confirm('Hapus log ini? Tindakan ini tidak dapat dibatalkan.')) {
+                // Get log entry ID and nomorSJ from the entry to delete related stok transactions
+                const logEntryId = entry.id;
+                const nomorSJ = entry.data?.nomorSJ || '';
+                
+                // Delete related stok transactions if logEntryId exists
+                if (logEntryId) {
+                    try {
+                        // Ensure stokData is loaded
+                        if (typeof window.stokData === 'undefined' || !Array.isArray(window.stokData)) {
+                            if (typeof loadData === 'function') {
+                                await loadData();
+                            } else {
+                                window.stokData = [];
+                            }
+                        }
+                        
+                        // Find all stok transactions with matching logEntryId (more precise than nota)
+                        const currentStokData = window.stokData || [];
+                        const transactionsToDelete = currentStokData.filter(stokEntry => {
+                            return stokEntry.logEntryId === logEntryId;
+                        });
+                        
+                        if (transactionsToDelete.length > 0) {
+                            // Delete from IndexedDB and array
+                            for (const transaction of transactionsToDelete) {
+                                // Delete from IndexedDB
+                                let deleteFunc = null;
+                                if (typeof window.deleteEntryFromDB === 'function') {
+                                    deleteFunc = window.deleteEntryFromDB;
+                                } else if (typeof deleteEntryFromDB === 'function') {
+                                    deleteFunc = deleteEntryFromDB;
+                                }
+                                
+                                if (deleteFunc) {
+                                    try {
+                                        await deleteFunc(transaction.id);
+                                    } catch (error) {
+                                        console.error(`Error deleting transaction ID ${transaction.id} from DB:`, error);
+                                    }
+                                }
+                                
+                                // Remove from stokData array
+                                const stokIndex = window.stokData.findIndex(e => e.id === transaction.id);
+                                if (stokIndex !== -1) {
+                                    window.stokData.splice(stokIndex, 1);
+                                }
+                            }
+                            
+                            // Update UI
+                            if (typeof updateStokTable === 'function') {
+                                updateStokTable();
+                            }
+                            if (typeof updateTotalSisa === 'function') {
+                                updateTotalSisa();
+                            }
+                            if (typeof updateJenisKacaList === 'function') {
+                                updateJenisKacaList();
+                            }
+                            if (typeof updateUkuranKacaList === 'function') {
+                                updateUkuranKacaList();
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error deleting related stok transactions:', error);
+                    }
+                }
+                
+                // Delete the log entry
                 inputLogHistory.splice(index, 1);
                 saveInputLogToStorage();
                 renderInputLog();
@@ -19344,6 +19654,10 @@ No. Kendaraan: ${noKendaraan}
             resetLogSearchFilter();
             // Build initial suggestions (once after initial log load)
             updateKacaSuggestionsFromLogs();
+            // Update supir and kendaraan suggestions with a small delay to ensure data is loaded
+            setTimeout(function() {
+                updateSupirDanKendaraanSuggestions();
+            }, 100);
             // Disable browser autocomplete on existing inputs to avoid duplicate dropdowns
             document.querySelectorAll('input.jenis-kaca, input.ukuran').forEach(el => {
                 el.setAttribute('autocomplete', 'off');
@@ -19356,6 +19670,22 @@ No. Kendaraan: ${noKendaraan}
             if (restoreInput) {
                 restoreInput.setAttribute('multiple', 'multiple');
                 console.log('Restore input multiple attribute set:', restoreInput.multiple);
+            }
+            
+            // Add event listeners to update suggestions when input fields are focused
+            const supirInput = document.getElementById('supir');
+            const noKendaraanInput = document.getElementById('noKendaraan');
+            
+            if (supirInput) {
+                supirInput.addEventListener('focus', function() {
+                    updateSupirDanKendaraanSuggestions();
+                });
+            }
+            
+            if (noKendaraanInput) {
+                noKendaraanInput.addEventListener('focus', function() {
+                    updateSupirDanKendaraanSuggestions();
+                });
             }
         });
 
@@ -20145,7 +20475,6 @@ No. Kendaraan: ${noKendaraan}
                         return `<option value="${item.replace(/"/g, '&quot;')}"></option>`;
                     } else {
                         // From stokData (with stock info)
-                        let displayValue = item.display;
                         let stockInfo = '';
                         
                         if (item.sisa > 0) {
@@ -20153,14 +20482,14 @@ No. Kendaraan: ${noKendaraan}
                                 const hargaText = item.harga.length === 1 
                                     ? `Rp ${item.harga[0].toLocaleString('id-ID')}`
                                     : item.harga.map(h => `Rp ${h.toLocaleString('id-ID')}`).join(' / ');
-                                stockInfo = ` (Harga: ${hargaText}, Sisa: ${item.sisa.toLocaleString('id-ID')})`;
+                                stockInfo = `Harga: ${hargaText}, Sisa: ${item.sisa.toLocaleString('id-ID')}`;
                             } else {
-                                stockInfo = ` (Sisa: ${item.sisa.toLocaleString('id-ID')})`;
+                                stockInfo = `Sisa: ${item.sisa.toLocaleString('id-ID')}`;
                             }
-                            displayValue = `${item.display}${stockInfo}`;
                         }
                         
-                        return `<option value="${item.display.replace(/"/g, '&quot;')}" data-stock="${item.sisa}" data-harga="${item.harga ? item.harga.join(',') : ''}">${displayValue.replace(/"/g, '&quot;')}</option>`;
+                        // Value is jenis kaca (baris pertama), text content is stockInfo only (baris kedua)
+                        return `<option value="${item.display.replace(/"/g, '&quot;')}" data-stock="${item.sisa}" data-harga="${item.harga ? item.harga.join(',') : ''}">${stockInfo ? stockInfo.replace(/"/g, '&quot;') : item.display.replace(/"/g, '&quot;')}</option>`;
                     }
                 };
                 
@@ -20173,6 +20502,57 @@ No. Kendaraan: ${noKendaraan}
                 if (ukuranList) ukuranList.innerHTML = ukuranValues.map(buildOptionHTML).join('');
             } catch (e) {
                 console.warn('Failed updating kaca suggestions:', e);
+            }
+        }
+
+        // Function to update supir and noKendaraan suggestions from input log history
+        function updateSupirDanKendaraanSuggestions() {
+            try {
+                const supirSet = new Set();
+                const noKendaraanSet = new Set();
+
+                // Collect unique values from inputLogHistory
+                (inputLogHistory || []).forEach(entry => {
+                    const data = entry.data || {};
+                    if (data.supir) {
+                        const supirValue = String(data.supir).trim();
+                        if (supirValue) {
+                            supirSet.add(supirValue);
+                        }
+                    }
+                    if (data.noKendaraan) {
+                        const noKendaraanValue = String(data.noKendaraan).trim();
+                        if (noKendaraanValue) {
+                            noKendaraanSet.add(noKendaraanValue);
+                        }
+                    }
+                });
+
+                // Sort and create options
+                const supirValues = Array.from(supirSet).sort((a, b) => 
+                    a.toLowerCase().localeCompare(b.toLowerCase())
+                );
+                const noKendaraanValues = Array.from(noKendaraanSet).sort((a, b) => 
+                    a.toLowerCase().localeCompare(b.toLowerCase())
+                );
+
+                // Update datalists
+                const supirList = document.getElementById('datalistSupir');
+                const noKendaraanList = document.getElementById('datalistNoKendaraan');
+                
+                if (supirList) {
+                    supirList.innerHTML = supirValues.map(value => 
+                        `<option value="${value.replace(/"/g, '&quot;')}"></option>`
+                    ).join('');
+                }
+                
+                if (noKendaraanList) {
+                    noKendaraanList.innerHTML = noKendaraanValues.map(value => 
+                        `<option value="${value.replace(/"/g, '&quot;')}"></option>`
+                    ).join('');
+                }
+            } catch (e) {
+                // Silently handle errors
             }
         }
 
@@ -20298,7 +20678,6 @@ No. Kendaraan: ${noKendaraan}
                     if (typeof item === 'string') {
                         return `<option value="${item.replace(/"/g, '&quot;')}"></option>`;
                     } else {
-                        let displayValue = item.display;
                         let stockInfo = '';
                         
                         if (item.sisa > 0) {
@@ -20306,14 +20685,14 @@ No. Kendaraan: ${noKendaraan}
                                 const hargaText = item.harga.length === 1 
                                     ? `Rp ${item.harga[0].toLocaleString('id-ID')}`
                                     : item.harga.map(h => `Rp ${h.toLocaleString('id-ID')}`).join(' / ');
-                                stockInfo = ` (Harga: ${hargaText}, Sisa: ${item.sisa.toLocaleString('id-ID')})`;
+                                stockInfo = `Harga: ${hargaText}, Sisa: ${item.sisa.toLocaleString('id-ID')}`;
                             } else {
-                                stockInfo = ` (Sisa: ${item.sisa.toLocaleString('id-ID')})`;
+                                stockInfo = `Sisa: ${item.sisa.toLocaleString('id-ID')}`;
                             }
-                            displayValue = `${item.display}${stockInfo}`;
                         }
                         
-                        return `<option value="${item.display.replace(/"/g, '&quot;')}" data-stock="${item.sisa}" data-harga="${item.harga ? item.harga.join(',') : ''}">${displayValue.replace(/"/g, '&quot;')}</option>`;
+                        // Value is ukuran (baris pertama), text content is stockInfo only (baris kedua)
+                        return `<option value="${item.display.replace(/"/g, '&quot;')}" data-stock="${item.sisa}" data-harga="${item.harga ? item.harga.join(',') : ''}">${stockInfo ? stockInfo.replace(/"/g, '&quot;') : item.display.replace(/"/g, '&quot;')}</option>`;
                     }
                 };
 
@@ -20605,9 +20984,9 @@ No. Kendaraan: ${noKendaraan}
             const idx = findLogIndexById(logId);
             if (idx >= 0) editLogEntry(idx);
         }
-        function deleteLogEntryById(logId) {
+        async function deleteLogEntryById(logId) {
             const idx = findLogIndexById(logId);
-            if (idx >= 0) deleteLogEntry(idx);
+            if (idx >= 0) await deleteLogEntry(idx);
         }
 
         // Test function to verify new log display
@@ -21017,6 +21396,7 @@ No. Kendaraan: ${noKendaraan}
                                 console.log('✅ Loaded input log from IndexedDB:', inputLogHistory.length, 'entries');
                                 if (typeof renderInputLog === 'function') renderInputLog();
                                 if (typeof updateKacaSuggestionsFromLogs === 'function') updateKacaSuggestionsFromLogs();
+                                if (typeof updateSupirDanKendaraanSuggestions === 'function') updateSupirDanKendaraanSuggestions();
                                 if (typeof window.refreshNomorSJWarningNow === 'function') window.refreshNomorSJWarningNow();
                                 return;
                             }
@@ -21033,6 +21413,7 @@ No. Kendaraan: ${noKendaraan}
                             if (saved) {
                                 inputLogHistory = saved;
                                 if (typeof renderInputLog === 'function') renderInputLog();
+                                if (typeof updateSupirDanKendaraanSuggestions === 'function') updateSupirDanKendaraanSuggestions();
                             }
                         } catch (e) {
                             console.warn('Fallback localStorage load failed', e);
@@ -21045,6 +21426,7 @@ No. Kendaraan: ${noKendaraan}
                                 storageManager.save('inputLogHistory', inputLogHistory);
                             }
                             if (typeof updateKacaSuggestionsFromLogs === 'function') updateKacaSuggestionsFromLogs();
+                            if (typeof updateSupirDanKendaraanSuggestions === 'function') updateSupirDanKendaraanSuggestions();
                             if (typeof window.refreshNomorSJWarningNow === 'function') window.refreshNomorSJWarningNow();
                         } catch (e) {
                             console.warn('localStorage save fallback failed', e);
@@ -22580,9 +22962,19 @@ No. Kendaraan: ${noKendaraan}
       const tableBody = document.getElementById("stokTable").getElementsByTagName('tbody')[0];
       tableBody.innerHTML = ""; // Clear the table body
 
+      // Use window.stokData if available (for sync with surat jalan), otherwise use local stokData
+      const dataSource = (typeof window !== 'undefined' && typeof window.stokData !== 'undefined' && Array.isArray(window.stokData)) 
+        ? window.stokData 
+        : stokData;
+      
+      // Sync local stokData with window.stokData if available
+      if (typeof window !== 'undefined' && typeof window.stokData !== 'undefined' && Array.isArray(window.stokData)) {
+        stokData = [...window.stokData];
+      }
+
       // Sort by ID (newest first) - ID is created with Date.now() so higher ID = newer entry
       // This ensures the most recently added entries appear at the top
-      const sortedData = [...stokData].sort((a, b) => {
+      const sortedData = [...dataSource].sort((a, b) => {
         // Primary sort: by ID (newest first)
         const idA = a.id || 0;
         const idB = b.id || 0;
@@ -22623,13 +23015,19 @@ No. Kendaraan: ${noKendaraan}
                 <i class="fas fa-edit"></i>
               </button>
               ` : `
-              <button class="row-action-btn edit-btn" style="opacity: 0.3; cursor: not-allowed;" disabled title="Edit penjualan dilakukan di log surat jalan">
+              <button class="row-action-btn edit-btn" style="display: none;" title="Edit penjualan dilakukan di log surat jalan">
                 <i class="fas fa-edit"></i>
               </button>
               `}
-              <button class="row-action-btn delete-btn" onclick="deleteEntry(${entry.id})">
+              ${isPembelian ? `
+              <button class="row-action-btn delete-btn" onclick="deleteEntry(${entry.id})" title="Hapus data pembelian">
                 <i class="fas fa-trash"></i>
               </button>
+              ` : `
+              <button class="row-action-btn delete-btn" style="display: none;" title="Hapus penjualan dilakukan di log surat jalan">
+                <i class="fas fa-trash"></i>
+              </button>
+              `}
             </div>
           </td>
         `;
@@ -22699,6 +23097,16 @@ No. Kendaraan: ${noKendaraan}
 
     // Function to delete an entry
     async function deleteEntry(id) {
+      const entry = stokData.find(item => item.id === id);
+      if (!entry) return;
+      
+      // Prevent deletion of penjualan entries (keluar > 0, masuk === 0)
+      // Penjualan entries should be deleted from log surat jalan
+      if (entry.keluar > 0 && entry.masuk === 0) {
+        alert('Data penjualan tidak dapat dihapus di sini. Silakan hapus di log surat jalan.');
+        return;
+      }
+      
       if (confirm("Apakah Anda yakin ingin menghapus data ini?")) {
         try {
           stokData = stokData.filter(entry => entry.id !== id);
