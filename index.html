@@ -4187,7 +4187,7 @@
                                     <textarea 
                                         id="alamat" 
                                         name="alamat" 
-                                        placeholder="Alamat akan muncul otomatis setelah mengisi nama toko"
+                                        placeholder="Alamat"
                                         readonly
                                         class="auto-resize"
                                     ></textarea>
@@ -4963,6 +4963,188 @@
                 }
             } catch (error) {
                 console.error('Error recording stok transactions from surat jalan:', error);
+            }
+        }
+
+        // Process stok transactions from imported log entries
+        async function processStokFromImportedLogs(importedEntries) {
+            try {
+                if (!importedEntries || importedEntries.length === 0) {
+                    return;
+                }
+
+                // Ensure stokData is loaded
+                if (typeof window.stokData === 'undefined' || !Array.isArray(window.stokData)) {
+                    if (typeof loadData === 'function') {
+                        await loadData();
+                    } else {
+                        window.stokData = [];
+                    }
+                }
+
+                const transactions = [];
+                
+                // Process each imported entry
+                for (const entry of importedEntries) {
+                    const entryData = entry.data || {};
+                    const kacaData = entryData.kacaData || {};
+                    const rows = Array.isArray(kacaData) ? kacaData : (kacaData.rows || []);
+                    
+                    if (!rows || rows.length === 0) continue;
+                    
+                    const namaToko = entryData.namaToko || '';
+                    const nomorSJ = entryData.nomorSJ || '';
+                    const tanggal = entryData.tanggal || '';
+                    
+                    if (!namaToko) continue;
+                    
+                    // Format date if needed
+                    let formattedDate = tanggal;
+                    if (tanggal && !tanggal.includes('/')) {
+                        // Try to parse ISO date or other formats
+                        try {
+                            const dateObj = new Date(tanggal);
+                            if (!isNaN(dateObj.getTime())) {
+                                if (typeof formatDate === 'function') {
+                                    formattedDate = formatDate(tanggal);
+                                } else {
+                                    const day = String(dateObj.getDate()).padStart(2, '0');
+                                    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                                    const year = dateObj.getFullYear();
+                                    formattedDate = `${day}/${month}/${year}`;
+                                }
+                            }
+                        } catch (e) {
+                            // Use original date if parsing fails
+                        }
+                    }
+                    
+                    // Process each kaca row
+                    rows.forEach((row, index) => {
+                        const jenisKaca = (row.jenisKaca || '').trim();
+                        const ukuran = (row.ukuran || '').trim();
+                        const totalLbr = parseFloat(row.totalLbr) || 0;
+                        const hargaJual = parseFloat(row.hargaJual || row.harga || 0) || 0;
+                        
+                        // Skip if no jenis kaca, ukuran, or totalLbr
+                        if (!jenisKaca || !ukuran || !totalLbr || totalLbr <= 0) return;
+                        
+                        // Try to find harga beli from stok data
+                        let hargaBeli = 0;
+                        if (window.stokData && window.stokData.length > 0) {
+                            const matchingStok = window.stokData.find(s => 
+                                s.tebal === jenisKaca && 
+                                s.ukuran === ukuran &&
+                                s.masuk > 0
+                            );
+                            if (matchingStok && matchingStok.harga) {
+                                hargaBeli = matchingStok.harga;
+                            }
+                        }
+                        
+                        // Use nomor SJ as nota, fallback to default format
+                        const notaValue = nomorSJ || `SJ-${formattedDate.replace(/\//g, '')}-${index + 1}`;
+                        
+                        // Create transaction entry
+                        const transaction = {
+                            id: Date.now() + Math.random() + index, // Unique ID
+                            nama: namaToko,
+                            tanggal: formattedDate,
+                            nota: notaValue,
+                            tebal: jenisKaca,
+                            ukuran: ukuran,
+                            harga: hargaBeli > 0 ? hargaBeli : undefined,
+                            hargaJual: hargaJual > 0 ? hargaJual : undefined,
+                            masuk: 0,
+                            keluar: totalLbr,
+                            logEntryId: entry.id || null // Link to log entry
+                        };
+                        
+                        transactions.push(transaction);
+                    });
+                }
+                
+                // Record all transactions
+                if (transactions.length > 0) {
+                    // Add each transaction to stokData and IndexedDB
+                    for (const transaction of transactions) {
+                        try {
+                            // Check if transaction already exists
+                            // First check by logEntryId (most precise)
+                            let existingIndex = -1;
+                            if (transaction.logEntryId) {
+                                existingIndex = window.stokData.findIndex(t => 
+                                    t.logEntryId === transaction.logEntryId && 
+                                    t.tebal === transaction.tebal &&
+                                    t.ukuran === transaction.ukuran
+                                );
+                            }
+                            
+                            // If not found by logEntryId, check by nota, tanggal, nama, tebal, ukuran (for old data without logEntryId)
+                            if (existingIndex === -1) {
+                                existingIndex = window.stokData.findIndex(t => 
+                                    !t.logEntryId && // Only match old entries without logEntryId
+                                    t.nota === transaction.nota &&
+                                    t.tanggal === transaction.tanggal &&
+                                    t.nama === transaction.nama &&
+                                    t.tebal === transaction.tebal &&
+                                    t.ukuran === transaction.ukuran &&
+                                    t.keluar === transaction.keluar
+                                );
+                            }
+                            
+                            if (existingIndex === -1) {
+                                // Add new transaction to stokData array
+                                if (Array.isArray(window.stokData)) {
+                                    window.stokData.unshift(transaction);
+                                }
+                                
+                                // Add to IndexedDB if addEntry function is available
+                                if (typeof addEntry === 'function') {
+                                    await addEntry(transaction);
+                                }
+                            } else {
+                                // Update existing transaction (preserve original ID)
+                                const existingId = window.stokData[existingIndex].id;
+                                transaction.id = existingId;
+                                window.stokData[existingIndex] = transaction;
+                                if (typeof updateEntry === 'function') {
+                                    await updateEntry(transaction);
+                                }
+                            }
+                        } catch (error) {
+                            console.error('Error recording transaction from imported log:', transaction, error);
+                        }
+                    }
+                    
+                    // Sync stokData local variable with window.stokData
+                    if (typeof window.stokData !== 'undefined' && Array.isArray(window.stokData)) {
+                        if (typeof stokData !== 'undefined') {
+                            stokData = [...window.stokData];
+                        }
+                    }
+                    
+                    // Update stok table and related UI if functions are available
+                    if (typeof updateStokTable === 'function') {
+                        updateStokTable();
+                    }
+                    if (typeof updateTotalSisa === 'function') {
+                        updateTotalSisa();
+                    }
+                    if (typeof updateNamaTokoList === 'function') {
+                        updateNamaTokoList();
+                    }
+                    if (typeof updateJenisKacaList === 'function') {
+                        updateJenisKacaList();
+                    }
+                    if (typeof updateUkuranKacaList === 'function') {
+                        updateUkuranKacaList();
+                    }
+                    
+                    console.log(`✅ Processed ${transactions.length} stok transactions from ${importedEntries.length} imported log entries`);
+                }
+            } catch (error) {
+                console.error('Error processing stok from imported logs:', error);
             }
         }
 
@@ -9528,7 +9710,7 @@ No. Kendaraan: ${noKendaraan}
                 const kacaDataDisplay = formatKacaDataForDisplay(entry.data.kacaData);
                 
                 html += `
-                    <div class="log-entry" onclick="toggleLogDetailsById(${entry.id})" title="Klik untuk melihat detail lengkap">
+                    <div class="log-entry" onclick="toggleLogDetailsById(${entry.id})" title="Klik untuk melihat detail lengkap" style="padding-left: 10px;">
                         <div class="log-entry-header" style="margin-bottom: 0px;">
                             <span class="log-timestamp">${timestamp}</span>
                             <span class="log-toggle-icon">📋</span>
@@ -9581,16 +9763,6 @@ No. Kendaraan: ${noKendaraan}
                                 <span class="log-label">No. SJ</span>
                                 <span class="log-sep">:</span>
                                 <span class="log-value">${entry.data.nomorSJ}</span>
-                            </div>
-                            <div class="log-item">
-                                <span class="log-label">Supir</span>
-                                <span class="log-sep">:</span>
-                                <span class="log-value">${entry.data.supir}</span>
-                            </div>
-                            <div class="log-item">
-                                <span class="log-label">No. Kendaraan</span>
-                                <span class="log-sep">:</span>
-                                <span class="log-value">${entry.data.noKendaraan}</span>
                             </div>
                             <div class="log-item">
                                 <span class="log-label">Data Kaca</span>
@@ -10273,13 +10445,92 @@ No. Kendaraan: ${noKendaraan}
         // Removed formatKacaDataForCSV (not used anymore)
 
         // Clear all input logs
-        function clearInputLog() {
+        async function clearInputLog() {
             if (confirm('Apakah Anda yakin ingin menghapus semua log input? Tindakan ini tidak dapat dibatalkan.')) {
-                inputLogHistory = [];
-                saveInputLogToStorage();
-                renderInputLog();
-                alert('Semua log input telah dihapus!');
-                console.log('🗑️ Cleared all input logs');
+                try {
+                    // Collect all log entry IDs before clearing
+                    const logEntryIds = inputLogHistory.map(entry => entry.id).filter(id => id != null);
+                    
+                    // Clear input logs
+                    inputLogHistory = [];
+                    saveInputLogToStorage();
+                    renderInputLog();
+                    
+                    // Delete related stok entries
+                    if (logEntryIds.length > 0) {
+                        // Ensure stokData is loaded
+                        if (typeof window.stokData === 'undefined' || !Array.isArray(window.stokData)) {
+                            try {
+                                if (typeof loadData === 'function') {
+                                    await loadData();
+                                } else {
+                                    window.stokData = [];
+                                }
+                            } catch (e) {
+                                console.warn('Failed to load stokData:', e);
+                                window.stokData = [];
+                            }
+                        }
+                        
+                        const currentStokData = window.stokData || [];
+                        
+                        // Find all stok entries linked to these log entries
+                        const stokEntriesToDelete = currentStokData.filter(entry => 
+                            entry.logEntryId != null && logEntryIds.includes(entry.logEntryId)
+                        );
+                        
+                        console.log(`🗑️ Found ${stokEntriesToDelete.length} stok entries linked to ${logEntryIds.length} log entries`);
+                        
+                        // Delete each stok entry from IndexedDB and arrays
+                        for (const stokEntry of stokEntriesToDelete) {
+                            try {
+                                // Remove from arrays
+                                if (Array.isArray(window.stokData)) {
+                                    const index = window.stokData.findIndex(e => e.id === stokEntry.id);
+                                    if (index !== -1) {
+                                        window.stokData.splice(index, 1);
+                                    }
+                                }
+                                
+                                if (typeof stokData !== 'undefined' && Array.isArray(stokData)) {
+                                    stokData = stokData.filter(e => e.id !== stokEntry.id);
+                                }
+                                
+                                // Delete from IndexedDB
+                                if (typeof deleteEntryFromDB === 'function') {
+                                    await deleteEntryFromDB(stokEntry.id);
+                                }
+                            } catch (error) {
+                                console.error('Error deleting stok entry:', stokEntry.id, error);
+                            }
+                        }
+                        
+                        // Update UI if functions are available
+                        if (typeof updateStokTable === 'function') {
+                            updateStokTable();
+                        }
+                        if (typeof updateTotalSisa === 'function') {
+                            updateTotalSisa();
+                        }
+                        if (typeof updateNamaTokoList === 'function') {
+                            updateNamaTokoList();
+                        }
+                        if (typeof updateJenisKacaList === 'function') {
+                            updateJenisKacaList();
+                        }
+                        if (typeof updateUkuranKacaList === 'function') {
+                            updateUkuranKacaList();
+                        }
+                        
+                        console.log(`✅ Deleted ${stokEntriesToDelete.length} related stok entries`);
+                    }
+                    
+                    alert('Semua log input dan data terkait di riwayat stok telah dihapus!');
+                    console.log('🗑️ Cleared all input logs and related stok entries');
+                } catch (error) {
+                    console.error('Error clearing logs:', error);
+                    alert('Terjadi kesalahan saat menghapus log. Beberapa data mungkin tidak terhapus.');
+                }
             }
         }
 
@@ -10588,6 +10839,163 @@ No. Kendaraan: ${noKendaraan}
             URL.revokeObjectURL(url);
         }
 
+        // Import from new CSV format (one row per kaca item)
+        function importInputLogFromCSVNewFormat(lines, header, rawHeader) {
+            const hidx = Object.fromEntries(header.map((h,i)=>[h,i]));
+            const imported = [];
+            let currentEntry = null;
+            let currentRows = [];
+
+            const getValue = (row, key) => {
+                const idx = hidx[key];
+                if (idx === undefined) return '';
+                const val = (row[idx] || '').replace(/^\"|\"$/g, '').trim();
+                return val;
+            };
+
+            for (let i = 1; i < lines.length; i++) {
+                const row = parseCSVLine(lines[i]);
+                if (!row || row.length === 0) continue;
+
+                const timestamp = getValue(row, 'timestamp');
+                const namaToko = getValue(row, 'namaToko');
+                
+                // If this row has timestamp and namaToko, it's a new entry (or first row of entry)
+                if (timestamp && namaToko) {
+                    // Save previous entry if exists
+                    if (currentEntry) {
+                        currentEntry.data.kacaData.rows = currentRows;
+                        imported.push(currentEntry);
+                    }
+                    
+                    // Start new entry
+                    const alias = getValue(row, 'alias');
+                    const alamat = getValue(row, 'alamat').replace(/\\n/g, '\n');
+                    const tanggal = getValue(row, 'tanggal');
+                    const nomorSJ = getValue(row, 'nomorSJ');
+                    const supir = getValue(row, 'supir');
+                    const noKendaraan = getValue(row, 'noKendaraan');
+
+                    currentEntry = {
+                        id: Date.now() + i,
+                        timestamp: timestamp || new Date().toISOString(),
+                        data: {
+                            namaToko,
+                            alias,
+                            alamat,
+                            tanggal,
+                            nomorSJ,
+                            supir,
+                            noKendaraan,
+                            kacaData: {
+                                rows: [],
+                                footer: {
+                                    cont: '',
+                                    seal: '',
+                                    grandTotal: ''
+                                }
+                            }
+                        }
+                    };
+                    currentRows = [];
+                }
+                
+                // Get footer values (only from rows that have them, typically last row of entry)
+                const cont = getValue(row, 'cont');
+                const seal = getValue(row, 'seal');
+                const grandTotal = getValue(row, 'grandTotal');
+                if (currentEntry && (cont || seal || grandTotal)) {
+                    currentEntry.data.kacaData.footer.cont = cont || currentEntry.data.kacaData.footer.cont;
+                    currentEntry.data.kacaData.footer.seal = seal || currentEntry.data.kacaData.footer.seal;
+                    currentEntry.data.kacaData.footer.grandTotal = grandTotal || currentEntry.data.kacaData.footer.grandTotal;
+                }
+
+                // Parse kaca row data (use normalized keys)
+                const jenisKacaPwd = getValue(row, 'jenisKacaPwd');
+                const noDo = getValue(row, 'noDo');
+                const ukuranBoxLbr = getValue(row, 'ukuranBoxLbr');
+                const hargaJual = getValue(row, 'hargaJual');
+                const totalLbr = getValue(row, 'totalLbr');
+
+                // Parse jenisKacaPwd: format "Jenis PWD" or "Jenis" or "PWD"
+                // Smart parsing: only separate if last part looks like PWD
+                // PWD criteria: 3 chars or less, letters only, AND previous parts don't contain numbers
+                // This prevents "FL 2MM KCC" from being split (because "2MM" contains number)
+                let jenisKaca = '';
+                let pwd = '';
+                if (jenisKacaPwd) {
+                    const parts = jenisKacaPwd.trim().split(/\s+/);
+                    if (parts.length >= 2) {
+                        const lastPart = parts[parts.length - 1];
+                        const previousParts = parts.slice(0, -1).join(' ');
+                        // Check if last part looks like PWD: 3 characters or less, letters only
+                        const isLikelyPWD = lastPart.length <= 3 && /^[A-Za-z]+$/.test(lastPart);
+                        // Also check if previous parts contain numbers - if yes, likely the whole thing is jenis kaca
+                        const previousHasNumbers = /\d/.test(previousParts);
+                        
+                        if (isLikelyPWD && !previousHasNumbers) {
+                            // Separate: last part is PWD (and previous parts don't have numbers)
+                            jenisKaca = previousParts;
+                            pwd = lastPart;
+                        } else {
+                            // Last part is part of jenis kaca, not PWD
+                            // This handles cases like "FL 2MM KCC" where KCC is part of jenis kaca
+                            jenisKaca = parts.join(' ');
+                            pwd = '';
+                        }
+                    } else {
+                        jenisKaca = jenisKacaPwd;
+                        pwd = '';
+                    }
+                }
+
+                // Parse ukuranBoxLbr: format "Ukuran=Box@Lbr"
+                let ukuran = '';
+                let box = '';
+                let lbr = '';
+                if (ukuranBoxLbr) {
+                    const match = ukuranBoxLbr.match(/^(.+?)=(.+?)@(.+)$/);
+                    if (match) {
+                        ukuran = match[1];
+                        box = match[2];
+                        lbr = match[3];
+                    } else {
+                        ukuran = ukuranBoxLbr;
+                    }
+                }
+
+                // Only add row if there's actual kaca data
+                if (jenisKaca || pwd || noDo || ukuran || box || lbr || hargaJual || totalLbr) {
+                    currentRows.push({
+                        jenisKaca,
+                        pwd,
+                        noDo,
+                        ukuran,
+                        box,
+                        lbr,
+                        hargaJual: hargaJual || '',
+                        totalLbr
+                    });
+                }
+            }
+
+            // Save last entry
+            if (currentEntry) {
+                currentEntry.data.kacaData.rows = currentRows;
+                imported.push(currentEntry);
+            }
+
+            // Merge strategy: append imported at the beginning (newer first)
+            inputLogHistory = [...imported, ...inputLogHistory];
+
+            saveInputLogToStorage();
+            renderInputLog();
+            updateKacaSuggestionsFromLogs();
+            
+            // Process stok transactions from imported log entries
+            processStokFromImportedLogs(imported);
+        }
+
         // Handle import CSV for input log
         function handleImportLogFile(event) {
             const file = event.target.files && event.target.files[0];
@@ -10818,6 +11226,19 @@ No. Kendaraan: ${noKendaraan}
             console.log('Rendering log display...');
             renderInputLog();
             
+            // Process stok transactions from restored log entries
+            console.log('Processing stok transactions from restored logs...');
+            if (typeof processStokFromImportedLogs === 'function') {
+                try {
+                    await processStokFromImportedLogs(mergedLogs);
+                    console.log('✅ Stok transactions processed from restored logs');
+                } catch (error) {
+                    console.error('⚠️ Error processing stok from restored logs:', error);
+                }
+            } else {
+                console.warn('⚠️ processStokFromImportedLogs function not available');
+            }
+            
             if (statusText) statusText.textContent = `Restore selesai! ${mergedLogs.length} entri log telah dipulihkan.`;
             console.log('✅ Restore process completed successfully');
         }
@@ -10879,14 +11300,33 @@ No. Kendaraan: ${noKendaraan}
                         const totalLbr = getField('Total Lebar') || '';
                         
                         // Parse jenisKacaPwd (format: "jenis pwd" or "jenis" or "pwd")
+                        // Smart parsing: only separate if last part looks like PWD
+                        // PWD criteria: 3 chars or less, letters only, AND previous parts don't contain numbers
+                        // This prevents "FL 2MM KCC" from being split (because "2MM" contains number)
                         const jenisKacaPwdParts = jenisKacaPwd.trim().split(/\s+/);
                         let jenisKaca = '';
                         let pwd = '';
                         if (jenisKacaPwdParts.length >= 2) {
-                            jenisKaca = jenisKacaPwdParts.slice(0, -1).join(' ');
-                            pwd = jenisKacaPwdParts[jenisKacaPwdParts.length - 1];
+                            const lastPart = jenisKacaPwdParts[jenisKacaPwdParts.length - 1];
+                            const previousParts = jenisKacaPwdParts.slice(0, -1).join(' ');
+                            // Check if last part looks like PWD: 3 characters or less, letters only
+                            const isLikelyPWD = lastPart.length <= 3 && /^[A-Za-z]+$/.test(lastPart);
+                            // Also check if previous parts contain numbers - if yes, likely the whole thing is jenis kaca
+                            const previousHasNumbers = /\d/.test(previousParts);
+                            
+                            if (isLikelyPWD && !previousHasNumbers) {
+                                // Separate: last part is PWD (and previous parts don't have numbers)
+                                jenisKaca = previousParts;
+                                pwd = lastPart;
+                            } else {
+                                // Last part is part of jenis kaca, not PWD
+                                // This handles cases like "FL 2MM KCC" where KCC is part of jenis kaca
+                                jenisKaca = jenisKacaPwdParts.join(' ');
+                                pwd = '';
+                            }
                         } else if (jenisKacaPwdParts.length === 1) {
                             jenisKaca = jenisKacaPwdParts[0];
+                            pwd = '';
                         }
                         
                         // Parse ukuranBoxLbr (format: "ukuran=box@lbr")
@@ -11004,12 +11444,47 @@ No. Kendaraan: ${noKendaraan}
         function importInputLogFromCSV(csvText) {
             const lines = csvText.replace(/\r/g, '').split('\n').filter(l => l.trim().length > 0);
             if (lines.length <= 1) throw new Error('CSV kosong');
-            const header = parseCSVLine(lines[0]).map(h => h.replace(/^\"|\"$/g,''));
+            const rawHeader = parseCSVLine(lines[0]).map(h => h.replace(/^\"|\"$/g,'').trim());
 
-            // Support both old CSVs (without 'alias') and new ones (with 'alias')
+            // Mapping header user-friendly ke key names
+            const headerMapping = {
+                'Timestamp': 'timestamp',
+                'Nama Toko': 'namaToko',
+                'Alias': 'alias',
+                'Alamat': 'alamat',
+                'Tanggal': 'tanggal',
+                'Nomor SJ': 'nomorSJ',
+                'Supir': 'supir',
+                'No Kendaraan': 'noKendaraan',
+                'Jenis Kaca PWD': 'jenisKacaPwd',
+                'No DO': 'noDo',
+                'Ukuran=Box@Lbr': 'ukuranBoxLbr',
+                'Harga Jual': 'hargaJual',
+                'Total Lebar': 'totalLbr',
+                'Container': 'cont',
+                'Seal': 'seal',
+                'Grand Total': 'grandTotal'
+            };
+
+            // Normalize header: map user-friendly names to key names, keep original if no mapping
+            const header = rawHeader.map(h => headerMapping[h] || h);
+
+            // Support both old CSVs (with key names) and new ones (with user-friendly names)
+            // Also support new export format (one row per kaca row)
+            // Check if it's new format: has 'jenisKacaPwd' (after mapping) or has both 'Timestamp' and 'Nama Toko' in raw header
+            const isNewFormat = header.includes('jenisKacaPwd') || 
+                               (rawHeader.includes('Timestamp') && rawHeader.includes('Nama Toko') && rawHeader.includes('Jenis Kaca PWD'));
+            
+            if (isNewFormat) {
+                // New format: one row per kaca item, need to group by entry
+                return importInputLogFromCSVNewFormat(lines, header, rawHeader);
+            }
+
+            // Old format: check required fields
             const required = ['timestamp','namaToko','alamat','tanggal','nomorSJ','supir','noKendaraan','kacaRows'];
-            for (const key of required) {
-                if (!header.includes(key)) throw new Error('Header CSV tidak valid, kurang kolom: ' + key);
+            const missing = required.filter(key => !header.includes(key));
+            if (missing.length > 0) {
+                throw new Error('Header CSV tidak valid, kurang kolom: ' + missing.join(', '));
             }
 
             const hidx = Object.fromEntries(header.map((h,i)=>[h,i]));
@@ -11077,13 +11552,23 @@ No. Kendaraan: ${noKendaraan}
             saveInputLogToStorage();
             renderInputLog();
             updateKacaSuggestionsFromLogs();
+            
+            // Process stok transactions from imported log entries
+            processStokFromImportedLogs(imported);
         }
 
         // Simple CSV line parser handling quoted fields
+        // Auto-detect separator: semicolon (;) or comma (,)
         function parseCSVLine(line) {
             const result = [];
             let current = '';
             let inQuotes = false;
+            // Auto-detect separator: check if line contains semicolon (more common in Excel Indonesia)
+            // If both exist, prefer semicolon
+            const hasSemicolon = line.includes(';');
+            const hasComma = line.includes(',');
+            const separator = (hasSemicolon && !hasComma) || (hasSemicolon && hasComma) ? ';' : ',';
+            
             for (let i = 0; i < line.length; i++) {
                 const char = line[i];
                 if (char === '"') {
@@ -11093,7 +11578,7 @@ No. Kendaraan: ${noKendaraan}
                     } else {
                         inQuotes = !inQuotes;
                     }
-                } else if (char === ',' && !inQuotes) {
+                } else if (char === separator && !inQuotes) {
                     result.push(current);
                     current = '';
                 } else {
@@ -12465,12 +12950,11 @@ No. Kendaraan: ${noKendaraan}
       <div class="action-menu" style="padding-bottom: 5px;">
         <div class="action-group">
           <button class="action-btn export-btn" onclick="exportToExcel()">
-            <i class="fas fa-file-excel"></i> Export Excel
+            <i class="fas fa-file-excel"></i> Export Riwayat
           </button>
-          <button class="action-btn import-btn" onclick="document.getElementById('fileImport').click()">
-            <i class="fas fa-file-import"></i> Import Excel
+          <button class="action-btn export-btn" onclick="exportStock()">
+            <i class="fas fa-file-excel"></i> Export Stock
           </button>
-          <input type="file" id="fileImport" accept=".xlsx,.xls" class="hidden-file-input" onchange="importFromExcel(event)">
           <button class="action-btn clear-btn" onclick="clearData()">
             <i class="fas fa-trash"></i> Clear Data
           </button>
@@ -13760,8 +14244,31 @@ No. Kendaraan: ${noKendaraan}
 
       try {
         if (currentlyEditingId) {
-          // Update existing entry
-          const index = stokData.findIndex(item => item.id === currentlyEditingId);
+          // Normalize ID to number for comparison
+          const normalizedId = typeof currentlyEditingId === 'string' ? parseFloat(currentlyEditingId) : currentlyEditingId;
+          
+          // Update existing entry - check both stokData and window.stokData
+          let index = stokData.findIndex(item => {
+            const itemId = typeof item.id === 'string' ? parseFloat(item.id) : item.id;
+            return itemId === normalizedId;
+          });
+          
+          // If not found in local stokData, check window.stokData
+          if (index === -1 && typeof window !== 'undefined' && typeof window.stokData !== 'undefined' && Array.isArray(window.stokData)) {
+            const windowIndex = window.stokData.findIndex(item => {
+              const itemId = typeof item.id === 'string' ? parseFloat(item.id) : item.id;
+              return itemId === normalizedId;
+            });
+            if (windowIndex !== -1) {
+              // Sync local stokData with window.stokData
+              stokData = [...window.stokData];
+              index = stokData.findIndex(item => {
+                const itemId = typeof item.id === 'string' ? parseFloat(item.id) : item.id;
+                return itemId === normalizedId;
+              });
+            }
+          }
+          
           if (index !== -1) {
             const updatedEntry = {
               id: currentlyEditingId,
@@ -13776,33 +14283,47 @@ No. Kendaraan: ${noKendaraan}
               keluar
             };
             stokData[index] = updatedEntry;
+            
             // Sync dengan window.stokData untuk surat jalan
-            if (typeof window.stokData !== 'undefined' && Array.isArray(window.stokData)) {
-              const windowIndex = window.stokData.findIndex(item => item.id === currentlyEditingId);
+            if (typeof window !== 'undefined' && typeof window.stokData !== 'undefined' && Array.isArray(window.stokData)) {
+              const windowIndex = window.stokData.findIndex(item => {
+                const itemId = typeof item.id === 'string' ? parseFloat(item.id) : item.id;
+                return itemId === normalizedId;
+              });
               if (windowIndex !== -1) {
                 window.stokData[windowIndex] = updatedEntry;
+              } else {
+                // Entry not in window.stokData, add it
+                window.stokData.push(updatedEntry);
+              }
+            } else {
+              // Initialize window.stokData if it doesn't exist
+              if (typeof window !== 'undefined') {
+                window.stokData = [...stokData];
               }
             }
+            
             await updateEntry(updatedEntry);
             showStatus("Data berhasil diupdate", "saving");
-            setTimeout(() => document.getElementById('statusBar').style.display = 'none', 2000);
+            setTimeout(() => {
+              const statusBar = document.getElementById('statusBar');
+              if (statusBar) statusBar.style.display = 'none';
+            }, 2000);
             
-            // Update tabel dan dropdown lists
+            // Update tabel dan dropdown lists without page refresh
             updateStokTable();
             updateTotalSisa();
             updateNamaTokoList();
             updateJenisKacaList();
             updateUkuranKacaList();
             
-            // Update dropdown surat jalan sebelum refresh
+            // Update dropdown surat jalan
             if (typeof updateKacaSuggestionsFromLogs === 'function') {
               updateKacaSuggestionsFromLogs();
             }
             
-            // Auto refresh halaman agar data terupdate
-            setTimeout(() => {
-              location.reload();
-            }, 1); // Delay 500ms untuk memastikan semua update selesai
+            // Reset form
+            cancelEdit();
             return;
           }
           cancelEdit();
@@ -14005,8 +14526,41 @@ No. Kendaraan: ${noKendaraan}
 
     // Function to edit an entry
     function editEntry(id) {
-      const entry = stokData.find(item => item.id === id);
-      if (!entry) return;
+      // Normalize ID to number for comparison (handle both string and number IDs)
+      const normalizedId = typeof id === 'string' ? parseFloat(id) : id;
+      
+      // Check both stokData and window.stokData for the entry
+      let entry = stokData.find(item => {
+        const itemId = typeof item.id === 'string' ? parseFloat(item.id) : item.id;
+        return itemId === normalizedId;
+      });
+      
+      if (!entry && typeof window !== 'undefined' && typeof window.stokData !== 'undefined' && Array.isArray(window.stokData)) {
+        entry = window.stokData.find(item => {
+          const itemId = typeof item.id === 'string' ? parseFloat(item.id) : item.id;
+          return itemId === normalizedId;
+        });
+        
+        // Sync local stokData if entry found in window.stokData
+        if (entry) {
+          const localIndex = stokData.findIndex(item => {
+            const itemId = typeof item.id === 'string' ? parseFloat(item.id) : item.id;
+            return itemId === normalizedId;
+          });
+          if (localIndex === -1) {
+            // Entry not in local stokData, add it
+            stokData.push(entry);
+          } else {
+            // Entry exists but might be outdated, update it
+            stokData[localIndex] = entry;
+          }
+        }
+      }
+      if (!entry) {
+        console.warn('Entry not found with id:', id, 'normalized:', normalizedId);
+        console.log('Available IDs in stokData:', stokData.map(e => e.id).slice(0, 10));
+        return;
+      }
 
       // Only allow editing for pembelian entries (masuk > 0)
       // For penjualan entries (keluar > 0), editing should be done in log surat jalan
@@ -14060,8 +14614,29 @@ No. Kendaraan: ${noKendaraan}
 
     // Function to delete an entry
     async function deleteEntry(id) {
-      const entry = stokData.find(item => item.id === id);
-      if (!entry) return;
+      // Normalize ID to number for comparison (handle both string and number IDs)
+      const normalizedId = typeof id === 'string' ? parseFloat(id) : id;
+      
+      // Check both stokData and window.stokData for the entry
+      let entry = stokData.find(item => {
+        const itemId = typeof item.id === 'string' ? parseFloat(item.id) : item.id;
+        return itemId === normalizedId;
+      });
+      
+      if (!entry && typeof window !== 'undefined' && typeof window.stokData !== 'undefined' && Array.isArray(window.stokData)) {
+        entry = window.stokData.find(item => {
+          const itemId = typeof item.id === 'string' ? parseFloat(item.id) : item.id;
+          return itemId === normalizedId;
+        });
+        // Sync local stokData if entry found in window.stokData
+        if (entry) {
+          stokData = [...window.stokData];
+        }
+      }
+      if (!entry) {
+        console.warn('Entry not found with id:', id, 'normalized:', normalizedId);
+        return;
+      }
       
       // Prevent deletion of penjualan entries (keluar > 0, masuk === 0)
       // Penjualan entries should be deleted from log surat jalan
@@ -14072,11 +14647,21 @@ No. Kendaraan: ${noKendaraan}
       
       if (confirm("Apakah Anda yakin ingin menghapus data ini?")) {
         try {
+          // Normalize ID for comparison
+          const normalizedId = typeof id === 'string' ? parseFloat(id) : id;
+          
           // Remove from local stokData
-          stokData = stokData.filter(entry => entry.id !== id);
+          stokData = stokData.filter(entry => {
+            const itemId = typeof entry.id === 'string' ? parseFloat(entry.id) : entry.id;
+            return itemId !== normalizedId;
+          });
+          
           // Also update window.stokData if it exists (for sync with surat jalan)
           if (typeof window !== 'undefined' && typeof window.stokData !== 'undefined' && Array.isArray(window.stokData)) {
-            window.stokData = window.stokData.filter(entry => entry.id !== id);
+            window.stokData = window.stokData.filter(entry => {
+              const itemId = typeof entry.id === 'string' ? parseFloat(entry.id) : entry.id;
+              return itemId !== normalizedId;
+            });
           }
           
           // Delete from IndexedDB
@@ -14208,11 +14793,33 @@ No. Kendaraan: ${noKendaraan}
             await initDB();
           }
 
-          const transaction = db.transaction([STORE_NAME], 'readwrite');
-          const store = transaction.objectStore(STORE_NAME);
-          await store.clear();
+          // Clear IndexedDB using Promise wrapper
+          await new Promise((resolve, reject) => {
+            const transaction = db.transaction([STORE_NAME], 'readwrite');
+            const store = transaction.objectStore(STORE_NAME);
+            const request = store.clear();
 
+            request.onsuccess = () => {
+              resolve();
+            };
+
+            request.onerror = () => {
+              reject(request.error);
+            };
+
+            transaction.onerror = () => {
+              reject(transaction.error);
+            };
+          });
+
+          // Clear local arrays
           stokData = [];
+          // Also clear window.stokData if it exists (for sync with surat jalan)
+          if (typeof window !== 'undefined' && typeof window.stokData !== 'undefined' && Array.isArray(window.stokData)) {
+            window.stokData = [];
+          }
+          
+          // Update all UI components without page refresh
           updateStokTable();
           updateTotalSisa();
           updateNamaTokoList();
@@ -14221,7 +14828,12 @@ No. Kendaraan: ${noKendaraan}
           clearSearch();
           
           showStatus("Semua data berhasil dihapus", "saving");
-          setTimeout(() => document.getElementById('statusBar').style.display = 'none', 2000);
+          setTimeout(() => {
+            const statusBar = document.getElementById('statusBar');
+            if (statusBar) statusBar.style.display = 'none';
+          }, 2000);
+          
+          console.log('🗑️ Cleared all stok data');
         } catch (error) {
           console.error('Error clearing data:', error);
           alert("Terjadi kesalahan saat menghapus data: " + error.message);
@@ -14231,40 +14843,198 @@ No. Kendaraan: ${noKendaraan}
 
     // Function to export data to Excel
     function exportToExcel() {
-      if (stokData.length === 0) {
-        showStatus("Tidak ada data untuk diexport", "error");
-        setTimeout(() => document.getElementById('statusBar').style.display = 'none', 2000);
-        return;
+      try {
+        // Use window.stokData if available (for sync with surat jalan), otherwise use local stokData
+        const dataSource = (typeof window !== 'undefined' && typeof window.stokData !== 'undefined' && Array.isArray(window.stokData)) 
+          ? window.stokData 
+          : stokData;
+        
+        if (!dataSource || dataSource.length === 0) {
+          showStatus("Tidak ada data untuk diexport", "error");
+          setTimeout(() => {
+            const statusBar = document.getElementById('statusBar');
+            if (statusBar) statusBar.style.display = 'none';
+          }, 2000);
+          return;
+        }
+
+        // Prepare data for export (without ID column)
+        const exportData = dataSource.map(entry => ({
+          'Nama Toko': entry.nama || '',
+          'Tanggal': entry.tanggal || '',
+          'No. Nota': entry.nota || '',
+          'Jenis Kaca': entry.tebal || '',
+          'Ukuran Kaca': entry.ukuran || '',
+          'Harga Beli': entry.harga || 0,
+          'Harga Jual': entry.hargaJual || 0,
+          'Jumlah Masuk': entry.masuk || 0,
+          'Jumlah Keluar': entry.keluar || 0,
+          'Sisa Stok': calculateCurrentStock(entry) || 0
+        }));
+
+        // Create worksheet
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        
+        // Set column widths for better readability (without ID column)
+        const colWidths = [
+          { wch: 20 }, // Nama Toko
+          { wch: 12 }, // Tanggal
+          { wch: 15 }, // No. Nota
+          { wch: 20 }, // Jenis Kaca
+          { wch: 15 }, // Ukuran Kaca
+          { wch: 12 }, // Harga Beli
+          { wch: 12 }, // Harga Jual
+          { wch: 12 }, // Jumlah Masuk
+          { wch: 12 }, // Jumlah Keluar
+          { wch: 12 }  // Sisa Stok
+        ];
+        ws['!cols'] = colWidths;
+        
+        // Create workbook
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Stok Barang Kaca");
+        
+        // Export to file
+        const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+        const fileName = `Stok_Barang_Kaca_${date}.xlsx`;
+        XLSX.writeFile(wb, fileName);
+        
+        showStatus(`Data berhasil diexport ke Excel (${exportData.length} baris)`, "saving");
+        setTimeout(() => {
+          const statusBar = document.getElementById('statusBar');
+          if (statusBar) statusBar.style.display = 'none';
+        }, 2000);
+        
+        console.log(`✅ Exported ${exportData.length} entries to ${fileName}`);
+      } catch (error) {
+        console.error('Error exporting to Excel:', error);
+        showStatus("Gagal mengexport data: " + error.message, "error");
+        setTimeout(() => {
+          const statusBar = document.getElementById('statusBar');
+          if (statusBar) statusBar.style.display = 'none';
+        }, 3000);
       }
+    }
 
-      // Prepare data for export
-      const exportData = stokData.map(entry => ({
-        'ID': entry.id,
-        'Nama Toko': entry.nama,
-        'Tanggal': entry.tanggal,
-        'No. Nota': entry.nota,
-        'Jenis Kaca': entry.tebal,
-        'Ukuran Kaca': entry.ukuran,
-        'Harga Beli': entry.harga || 0,
-        'Harga Jual': entry.hargaJual || 0,
-        'Jumlah Masuk': entry.masuk,
-        'Jumlah Keluar': entry.keluar,
-        'Sisa Stok': calculateCurrentStock(entry)
-      }));
+    // Function to export Stock data from totalSisaContainer
+    function exportStock() {
+      try {
+        // Use window.stokData if available (for sync with surat jalan), otherwise use local stokData
+        const dataSource = (typeof window !== 'undefined' && typeof window.stokData !== 'undefined' && Array.isArray(window.stokData)) 
+          ? window.stokData 
+          : stokData;
+        
+        if (!dataSource || dataSource.length === 0) {
+          showStatus("Tidak ada data untuk diexport", "error");
+          setTimeout(() => {
+            const statusBar = document.getElementById('statusBar');
+            if (statusBar) statusBar.style.display = 'none';
+          }, 2000);
+          return;
+        }
 
-      // Create worksheet
-      const ws = XLSX.utils.json_to_sheet(exportData);
-      
-      // Create workbook
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Stok Barang Kaca");
-      
-      // Export to file
-      const date = new Date().toISOString().slice(0, 10);
-      XLSX.writeFile(wb, `Stok_Barang_Kaca_${date}.xlsx`);
-      
-      showStatus("Data berhasil diexport ke Excel", "saving");
-      setTimeout(() => document.getElementById('statusBar').style.display = 'none', 2000);
+        // Group data by Tebal Kaca, Ukuran Kaca, dan Harga Beli (same logic as updateTotalSisa)
+        const groupedData = {};
+        
+        dataSource.forEach((entry) => {
+          const hargaKey = entry.harga !== undefined ? entry.harga : 'noharga';
+          const key = `${entry.tebal}-${entry.ukuran}-${hargaKey}`;
+
+          if (!groupedData[key]) {
+            groupedData[key] = { 
+              tebal: entry.tebal, 
+              ukuran: entry.ukuran, 
+              hargaMasuk: hargaKey !== 'noharga' ? entry.harga : undefined,
+              totalMasuk: 0, 
+              totalKeluar: 0, 
+              totalSisa: 0 
+            };
+          }
+
+          // Bila transaksi masuk dengan harga, simpan hargaMasuk khusus baris tersebut
+          if (entry.masuk > 0 && entry.harga !== undefined) {
+            groupedData[key].hargaMasuk = entry.harga;
+          }
+
+          groupedData[key].totalMasuk += entry.masuk || 0;
+          groupedData[key].totalKeluar += entry.keluar || 0;
+          groupedData[key].totalSisa = groupedData[key].totalMasuk - groupedData[key].totalKeluar;
+        });
+
+        // Convert groupedData to array and sort by jenis kaca (tebal) A-Z
+        const sortedData = Object.keys(groupedData).map(key => ({
+          key: key,
+          data: groupedData[key]
+        })).sort((a, b) => {
+          // Sort by jenis kaca (tebal) A-Z
+          const tebalA = (a.data.tebal || '').toUpperCase();
+          const tebalB = (b.data.tebal || '').toUpperCase();
+          if (tebalA !== tebalB) {
+            return tebalA.localeCompare(tebalB);
+          }
+          // If jenis kaca is the same, sort by ukuran A-Z
+          const ukuranA = (a.data.ukuran || '').toUpperCase();
+          const ukuranB = (b.data.ukuran || '').toUpperCase();
+          return ukuranA.localeCompare(ukuranB);
+        });
+
+        // Prepare data for export
+        const exportData = sortedData.map(({ data }) => ({
+          'Jenis Kaca': data.tebal || '',
+          'Ukuran Kaca': data.ukuran || '',
+          'Harga': data.hargaMasuk !== undefined ? data.hargaMasuk : 0,
+          'Kaca Masuk': data.totalMasuk || 0,
+          'Kaca Keluar': data.totalKeluar || 0,
+          'Sisa Stok': data.totalSisa || 0
+        }));
+
+        if (exportData.length === 0) {
+          showStatus("Tidak ada data stok untuk diexport", "error");
+          setTimeout(() => {
+            const statusBar = document.getElementById('statusBar');
+            if (statusBar) statusBar.style.display = 'none';
+          }, 2000);
+          return;
+        }
+
+        // Create worksheet
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        
+        // Set column widths for better readability
+        const colWidths = [
+          { wch: 20 }, // Jenis Kaca
+          { wch: 15 }, // Ukuran Kaca
+          { wch: 12 }, // Harga
+          { wch: 12 }, // Kaca Masuk
+          { wch: 12 }, // Kaca Keluar
+          { wch: 12 }  // Sisa Stok
+        ];
+        ws['!cols'] = colWidths;
+        
+        // Create workbook
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Stock Summary");
+        
+        // Export to file
+        const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+        const fileName = `Stock_Summary_${date}.xlsx`;
+        XLSX.writeFile(wb, fileName);
+        
+        showStatus(`Data stok berhasil diexport ke Excel (${exportData.length} baris)`, "saving");
+        setTimeout(() => {
+          const statusBar = document.getElementById('statusBar');
+          if (statusBar) statusBar.style.display = 'none';
+        }, 2000);
+        
+        console.log(`✅ Exported ${exportData.length} stock entries to ${fileName}`);
+      } catch (error) {
+        console.error('Error exporting stock to Excel:', error);
+        showStatus("Gagal mengexport data stok: " + error.message, "error");
+        setTimeout(() => {
+          const statusBar = document.getElementById('statusBar');
+          if (statusBar) statusBar.style.display = 'none';
+        }, 3000);
+      }
     }
 
     // Function to import data from Excel
@@ -14281,65 +15051,191 @@ No. Kendaraan: ${noKendaraan}
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
         // Validate and format imported data
-        const importedData = jsonData.map(item => {
+        const importedData = jsonData.map((item, index) => {
           // Handle different column name variations
-          const nama = item['Nama Toko'] || item['Nama'] || item.nama || '';
+          const nama = (item['Nama Toko'] || item['Nama'] || item.nama || '').toString().trim();
           const tanggal = item.Tanggal || item.tanggal || '';
-          const nota = item['No. Nota'] || item.Nota || item.nota || '';
-          const tebal = item['Jenis Kaca'] || item.Tebal || item.tebal || '';
-          const ukuran = item['Ukuran Kaca'] || item.Ukuran || item.ukuran || '';
+          const nota = (item['No. Nota'] || item.Nota || item.nota || '').toString().trim();
+          const tebal = (item['Jenis Kaca'] || item.Tebal || item.tebal || '').toString().trim();
+          const ukuran = (item['Ukuran Kaca'] || item.Ukuran || item.ukuran || '').toString().trim();
           const harga = item['Harga Beli'] || item['Harga'] || item.harga || 0;
           const hargaJual = item['Harga Jual'] || item.hargaJual || 0;
           const masuk = item['Jumlah Masuk'] || item.Masuk || item.masuk || 0;
           const keluar = item['Jumlah Keluar'] || item.Keluar || item.keluar || 0;
-          const id = item.ID || Date.now() + Math.floor(Math.random() * 1000);
+          
+          // Generate unique ID if not provided or if invalid
+          let id = item.ID;
+          if (!id || isNaN(id) || id <= 0) {
+            // Generate unique ID based on timestamp and index
+            id = Date.now() + index + Math.floor(Math.random() * 10000);
+          }
 
-          // Format date if needed
+          // Format date - handle multiple formats
           let formattedDate = tanggal;
           if (tanggal instanceof Date) {
             formattedDate = formatDate(tanggal.toISOString());
-          } else if (typeof tanggal === 'string' && tanggal.includes('-')) {
-            formattedDate = formatDate(tanggal);
+          } else if (typeof tanggal === 'string' && tanggal.trim()) {
+            // Handle various date formats
+            if (tanggal.includes('-')) {
+              // ISO format or YYYY-MM-DD
+              formattedDate = formatDate(tanggal);
+            } else if (tanggal.includes('/')) {
+              // DD/MM/YYYY or MM/DD/YYYY
+              const parts = tanggal.split('/');
+              if (parts.length === 3) {
+                // Assume DD/MM/YYYY format
+                const day = parts[0].padStart(2, '0');
+                const month = parts[1].padStart(2, '0');
+                const year = parts[2].length === 2 ? '20' + parts[2] : parts[2];
+                formattedDate = `${day}/${month}/${year}`;
+              } else {
+                formattedDate = tanggal;
+              }
+            } else {
+              // Try to parse as Excel serial date
+              const excelDate = parseFloat(tanggal);
+              if (!isNaN(excelDate) && excelDate > 0) {
+                // Excel date serial number (days since 1900-01-01)
+                const excelEpoch = new Date(1899, 11, 30);
+                const date = new Date(excelEpoch.getTime() + excelDate * 24 * 60 * 60 * 1000);
+                formattedDate = formatDate(date.toISOString());
+              } else {
+                formattedDate = tanggal;
+              }
+            }
           }
 
           return {
             id,
-            nama: nama.toString(),
+            nama: nama,
             tanggal: formattedDate,
-            nota: nota.toString(),
-            tebal: tebal.toString(),
-            ukuran: ukuran.toString(),
+            nota: nota,
+            tebal: tebal,
+            ukuran: ukuran,
             harga: parseNumber(harga),
             hargaJual: parseNumber(hargaJual),
             masuk: parseNumber(masuk),
             keluar: parseNumber(keluar)
           };
-        }).filter(item => item.nama && item.tanggal); // Filter out invalid rows
+        }).filter(item => {
+          // Filter out invalid rows - must have nama and tanggal
+          return item.nama && item.tanggal && item.tanggal.trim() !== '';
+        });
 
-        if (confirm(`Akan mengimpor ${importedData.length} data. Data yang sama akan diupdate, data baru akan ditambahkan. Lanjutkan?`)) {
+        if (importedData.length === 0) {
+          showStatus("Tidak ada data valid untuk diimpor", "error");
+          setTimeout(() => {
+            const statusBar = document.getElementById('statusBar');
+            if (statusBar) statusBar.style.display = 'none';
+          }, 2000);
+          return;
+        }
+
+        if (confirm(`Akan mengimpor ${importedData.length} data. Data yang sama (berdasarkan ID) akan diupdate, data baru akan ditambahkan. Lanjutkan?`)) {
           let updatedCount = 0;
           let addedCount = 0;
+          let errorCount = 0;
+          
+          // Get current data source to check for existing IDs
+          const currentStokData = (typeof window !== 'undefined' && typeof window.stokData !== 'undefined' && Array.isArray(window.stokData)) 
+            ? window.stokData 
+            : stokData;
           
           // Process each imported item
           for (const importedItem of importedData) {
-            // Check if item with same ID exists
-            const existingIndex = stokData.findIndex(item => item.id === importedItem.id);
-            
-            if (existingIndex !== -1) {
-              // Update existing data
-              stokData[existingIndex] = importedItem;
-              await updateEntry(importedItem);
-              updatedCount++;
-            } else {
-              // Add new data
-              stokData.unshift(importedItem);
-              await addEntry(importedItem);
-              addedCount++;
+            try {
+              // Check if item with same ID exists in both arrays
+              const existingIndex = currentStokData.findIndex(item => item.id === importedItem.id);
+              const localIndex = stokData.findIndex(item => item.id === importedItem.id);
+              
+              if (existingIndex !== -1 || localIndex !== -1) {
+                // Update existing data
+                const targetIndex = localIndex !== -1 ? localIndex : existingIndex;
+                if (targetIndex !== -1) {
+                  stokData[targetIndex] = importedItem;
+                } else {
+                  // Entry exists in window.stokData but not in local stokData
+                  stokData.push(importedItem);
+                }
+                
+                // Also update window.stokData if it exists
+                if (typeof window !== 'undefined' && typeof window.stokData !== 'undefined' && Array.isArray(window.stokData)) {
+                  const windowIndex = window.stokData.findIndex(item => item.id === importedItem.id);
+                  if (windowIndex !== -1) {
+                    window.stokData[windowIndex] = importedItem;
+                  } else {
+                    window.stokData.push(importedItem);
+                  }
+                }
+                
+                await updateEntry(importedItem);
+                updatedCount++;
+              } else {
+                // Generate new unique ID if ID already exists
+                let uniqueId = importedItem.id;
+                const allStokData = (typeof window !== 'undefined' && typeof window.stokData !== 'undefined' && Array.isArray(window.stokData)) 
+                  ? [...window.stokData, ...stokData]
+                  : stokData;
+                
+                while (allStokData.some(item => item.id === uniqueId)) {
+                  uniqueId = Date.now() + Math.floor(Math.random() * 1000000);
+                }
+                importedItem.id = uniqueId;
+                
+                // Add new data to both arrays
+                stokData.unshift(importedItem);
+                if (typeof window !== 'undefined') {
+                  if (typeof window.stokData === 'undefined' || !Array.isArray(window.stokData)) {
+                    window.stokData = [];
+                  }
+                  window.stokData.unshift(importedItem);
+                }
+                
+                await addEntry(importedItem);
+                addedCount++;
+              }
+            } catch (error) {
+              console.error('Error processing imported item:', importedItem, error);
+              errorCount++;
             }
+          }
+          
+          // Ensure both arrays are fully synchronized
+          // Remove duplicates and ensure consistency
+          const uniqueStokData = [];
+          const seenIds = new Set();
+          
+          // First, add all entries from stokData
+          for (const entry of stokData) {
+            if (!seenIds.has(entry.id)) {
+              uniqueStokData.push(entry);
+              seenIds.add(entry.id);
+            }
+          }
+          
+          // Then, add any entries from window.stokData that aren't in stokData
+          if (typeof window !== 'undefined' && typeof window.stokData !== 'undefined' && Array.isArray(window.stokData)) {
+            for (const entry of window.stokData) {
+              if (!seenIds.has(entry.id)) {
+                uniqueStokData.push(entry);
+                seenIds.add(entry.id);
+              }
+            }
+          }
+          
+          // Update both arrays with synchronized data
+          stokData = uniqueStokData;
+          if (typeof window !== 'undefined') {
+            window.stokData = [...stokData];
           }
           
           // Save all data to ensure consistency
           await saveData();
+          
+          // Reload data from IndexedDB to ensure we have the latest
+          await loadData();
+          
+          // Update all UI components without page refresh
           updateStokTable();
           updateTotalSisa();
           updateNamaTokoList();
@@ -14347,14 +15243,22 @@ No. Kendaraan: ${noKendaraan}
           updateUkuranKacaList();
           
           let message = `Berhasil mengimpor ${importedData.length} data`;
-          if (updatedCount > 0 && addedCount > 0) {
-            message += ` (${updatedCount} diupdate, ${addedCount} ditambahkan)`;
-          } else if (updatedCount > 0) {
-            message += ` (${updatedCount} diupdate)`;
-          } else if (addedCount > 0) {
-            message += ` (${addedCount} ditambahkan)`;
+          const parts = [];
+          if (updatedCount > 0) parts.push(`${updatedCount} diupdate`);
+          if (addedCount > 0) parts.push(`${addedCount} ditambahkan`);
+          if (errorCount > 0) parts.push(`${errorCount} error`);
+          
+          if (parts.length > 0) {
+            message += ` (${parts.join(', ')})`;
           }
-          showStatus(message, "saving");
+          
+          if (errorCount > 0) {
+            showStatus(message, "error");
+          } else {
+            showStatus(message, "saving");
+          }
+          
+          console.log(`✅ Imported ${importedData.length} entries (${updatedCount} updated, ${addedCount} added, ${errorCount} errors)`);
         } else {
           showStatus("Import dibatalkan", "error");
         }
