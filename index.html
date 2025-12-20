@@ -12863,7 +12863,7 @@ No. Kendaraan: ${noKendaraan}
         
         <input type="text" id="nama" placeholder="Nama Toko" required list="namaTokoList">
         <datalist id="namaTokoList"></datalist>
-        <input type="date" id="tanggal" required>
+        <input type="date" id="tanggalStok" required>
         <script>
           // Set tanggal otomatis saat form dimuat - khusus untuk form stok
           (function() {
@@ -12871,7 +12871,7 @@ No. Kendaraan: ${noKendaraan}
               // Pastikan hanya mengambil input tanggal dari form stok, bukan Surat Jalan
               const stokForm = document.getElementById('stokForm');
               if (stokForm) {
-                const tanggalInput = stokForm.querySelector('input[type="date"]#tanggal');
+                const tanggalInput = stokForm.querySelector('#tanggalStok');
                 if (tanggalInput && !tanggalInput.value) {
                   // Set tanggal default ke hari ini - sama seperti Surat Jalan
                   tanggalInput.valueAsDate = new Date();
@@ -14212,7 +14212,7 @@ No. Kendaraan: ${noKendaraan}
     // Function to add or update data
     async function tambahData() {
       const nama = document.getElementById("nama").value.trim();
-      const tanggal = document.getElementById("tanggal").value;
+      const tanggal = document.getElementById("tanggalStok").value;
       const nota = document.getElementById("nota").value.trim();
       const tebal = document.getElementById("tebal").value;
       const ukuran = document.getElementById("ukuran").value.trim();
@@ -14366,7 +14366,7 @@ No. Kendaraan: ${noKendaraan}
         
         // Reset form
         document.getElementById("stokForm").reset();
-        document.getElementById("tanggal").value = new Date().toISOString().split('T')[0];
+        document.getElementById("tanggalStok").value = new Date().toISOString().split('T')[0];
         toggleJumlahMasukKeluar();
         updateHargaBeliPlaceholder();
         updateHargaJualPlaceholder();
@@ -14578,7 +14578,7 @@ No. Kendaraan: ${noKendaraan}
 
       // Fill the form with entry data
       document.getElementById("nama").value = entry.nama;
-      document.getElementById("tanggal").value = formattedDate;
+      document.getElementById("tanggalStok").value = formattedDate;
       document.getElementById("nota").value = entry.nota;
       document.getElementById("tebal").value = entry.tebal;
       document.getElementById("ukuran").value = entry.ukuran;
@@ -14603,7 +14603,7 @@ No. Kendaraan: ${noKendaraan}
     function cancelEdit() {
       currentlyEditingId = null;
       document.getElementById("stokForm").reset();
-      document.getElementById("tanggal").value = new Date().toISOString().split('T')[0];
+      document.getElementById("tanggalStok").value = new Date().toISOString().split('T')[0];
       document.getElementById("stokForm").classList.remove("edit-mode");
       document.getElementById("submitBtn").textContent = "Tambah Data";
       document.getElementById("cancelEditBtn").style.display = "none";
@@ -15403,60 +15403,6 @@ No. Kendaraan: ${noKendaraan}
                 alamatField.style.backgroundColor = '#fff';
                 alamatField.style.height = '80px';
             }
-        });
-
-        // Fungsi untuk format tanggal Indonesia
-        document.getElementById('tanggal').addEventListener('change', function() {
-            const date = new Date(this.value);
-            const options = { 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-            };
-            
-            // Format tanggal Indonesia
-            const tanggalIndonesia = date.toLocaleDateString('id-ID', options);
-            console.log('Tanggal yang dipilih:', tanggalIndonesia);
-        });
-
-        // Handle form submission
-        document.getElementById('tokoForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const namaToko = document.getElementById('namaToko').value;
-            const alamat = document.getElementById('alamat').value;
-            const tanggal = document.getElementById('tanggal').value;
-            const nomorSJ = document.getElementById('nomorSJ').value;
-            const supir = document.getElementById('supir').value;
-            const noKendaraan = document.getElementById('noKendaraan').value;
-            
-            if (!namaToko || !tanggal || !nomorSJ || !supir || !noKendaraan) {
-                alert('Mohon lengkapi semua field yang wajib diisi!');
-                return;
-            }
-            
-            // Format tanggal untuk output
-            const date = new Date(tanggal);
-            const options = { 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-            };
-            const tanggalFormatted = date.toLocaleDateString('id-ID', options);
-            
-            // Output data
-            const output = `
-Data yang diinput:
-Nama Toko: ${namaToko}
-Alamat: ${alamat || 'Tidak ada alamat'}
-Tanggal: ${tanggalFormatted}
-No. SJ: ${nomorSJ}
-Nama Supir: ${supir}
-No. Kendaraan: ${noKendaraan}
-            `;
-            
-            alert(output);
-            console.log(output);
         });
 
         // Fungsi untuk menampilkan popup daftar toko
