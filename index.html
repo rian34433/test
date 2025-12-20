@@ -5139,7 +5139,6 @@ No. Kendaraan: ${noKendaraan}
                 try {
                     // Method 1: localStorage (preferred)
                     localStorage.setItem(key, JSON.stringify(data));
-                    console.log(`✅ Data saved to localStorage: ${key}`);
                     return true;
                 } catch (e) {
                     console.warn(`⚠️ localStorage failed for ${key}, trying alternatives...`);
@@ -5165,7 +5164,6 @@ No. Kendaraan: ${noKendaraan}
                     // Method 1: localStorage
                     const data = localStorage.getItem(key);
                     if (data) {
-                        console.log(`✅ Data loaded from localStorage: ${key}`);
                         return JSON.parse(data);
                     }
                 } catch (e) {
@@ -6166,7 +6164,6 @@ No. Kendaraan: ${noKendaraan}
                     }, 100);
                 }
                 
-                console.log('Glass row added successfully');
             } catch (error) {
                 console.error('Error adding glass row:', error);
             }
@@ -6844,18 +6841,6 @@ No. Kendaraan: ${noKendaraan}
                     }
                 }, 200);
                 
-                // Test fungsi kalkulasi
-                setTimeout(() => {
-                    console.log('Testing calculateTotalLbr function...');
-                    const testInput = document.querySelector('.box');
-                    if (testInput) {
-                        console.log('Test input found, function should work');
-                    } else {
-                        console.error('Test input not found');
-                    }
-                }, 1500);
-                
-                console.log('Page initialization completed successfully');
             } catch (error) {
                 console.error('Error during page initialization:', error);
             }
@@ -7447,9 +7432,7 @@ No. Kendaraan: ${noKendaraan}
                 const saved = storageManager.load('printTextPositions');
                 if (saved) {
                     savedPositions = saved;
-                    console.log('✅ Loaded saved positions from storage:', savedPositions);
                 } else {
-                    console.log('ℹ️ No saved positions found in storage');
                 }
             } catch (error) {
                 console.error('❌ Error loading saved positions:', error);
@@ -8174,7 +8157,6 @@ No. Kendaraan: ${noKendaraan}
                         fontSizeSelect.value = fontSize;
                     }
                     
-                    console.log(`📝 Loaded saved font size: ${fontSize}px`);
                 }
             } catch (error) {
                 console.error('❌ Error loading font size preference:', error);
@@ -8482,7 +8464,6 @@ No. Kendaraan: ${noKendaraan}
                         document.getElementById('colTotalLbr').value = columnSpacingConfig.totalLbr;
                     }
                     
-                    console.log('📊 Loaded column spacing from storage:', columnSpacingConfig);
                 }
             } catch (error) {
                 console.error('❌ Error loading column spacing:', error);
@@ -9062,11 +9043,9 @@ No. Kendaraan: ${noKendaraan}
                 const saved = storageManager.load('inputLogHistory');
                 if (saved) {
                     inputLogHistory = saved;
-                    console.log('✅ Loaded input log from storage:', inputLogHistory.length, 'entries');
                     renderInputLog();
                     updateSupirDanKendaraanSuggestions();
                 } else {
-                    console.log('ℹ️ No input log found in storage');
                 }
             } catch (error) {
                 console.error('❌ Error loading input log:', error);
@@ -10464,7 +10443,6 @@ No. Kendaraan: ${noKendaraan}
             const restoreInput = document.getElementById('restoreLogFileInput');
             if (restoreInput) {
                 restoreInput.setAttribute('multiple', 'multiple');
-                console.log('Restore input multiple attribute set:', restoreInput.multiple);
             }
             
             // Add event listeners to update suggestions when input fields are focused
@@ -12188,7 +12166,6 @@ No. Kendaraan: ${noKendaraan}
                             const fromIDB = await idbGet('inputLogHistory');
                             if (Array.isArray(fromIDB)) {
                                 inputLogHistory = fromIDB;
-                                console.log('✅ Loaded input log from IndexedDB:', inputLogHistory.length, 'entries');
                                 if (typeof renderInputLog === 'function') renderInputLog();
                                 if (typeof updateKacaSuggestionsFromLogs === 'function') updateKacaSuggestionsFromLogs();
                                 if (typeof updateSupirDanKendaraanSuggestions === 'function') updateSupirDanKendaraanSuggestions();
@@ -12562,7 +12539,6 @@ No. Kendaraan: ${noKendaraan}
 
         request.onsuccess = () => {
           db = request.result;
-          console.log('IndexedDB opened successfully');
           resolve(db);
         };
 
@@ -15228,7 +15204,6 @@ No. Kendaraan: ${noKendaraan}
                     }, 100);
                 }
                 
-                console.log('Glass row added successfully');
             } catch (error) {
                 console.error('Error adding glass row:', error);
             }
@@ -15766,18 +15741,6 @@ No. Kendaraan: ${noKendaraan}
                     }
                 }, 200);
                 
-                // Test fungsi kalkulasi
-                setTimeout(() => {
-                    console.log('Testing calculateTotalLbr function...');
-                    const testInput = document.querySelector('.box');
-                    if (testInput) {
-                        console.log('Test input found, function should work');
-                    } else {
-                        console.error('Test input not found');
-                    }
-                }, 1500);
-                
-                console.log('Page initialization completed successfully');
             } catch (error) {
                 console.error('Error during page initialization:', error);
             }
