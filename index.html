@@ -13800,22 +13800,34 @@ No. Kendaraan: ${noKendaraan}
               keluar
             };
             stokData[index] = updatedEntry;
+            // Sync dengan window.stokData untuk surat jalan
+            if (typeof window.stokData !== 'undefined' && Array.isArray(window.stokData)) {
+              const windowIndex = window.stokData.findIndex(item => item.id === currentlyEditingId);
+              if (windowIndex !== -1) {
+                window.stokData[windowIndex] = updatedEntry;
+              }
+            }
             await updateEntry(updatedEntry);
             showStatus("Data berhasil diupdate", "saving");
             setTimeout(() => document.getElementById('statusBar').style.display = 'none', 2000);
             
-            // Update tabel dan refresh halaman
+            // Update tabel dan dropdown lists
             updateStokTable();
             updateTotalSisa();
             updateNamaTokoList();
             updateJenisKacaList();
             updateUkuranKacaList();
             
+            // Update dropdown surat jalan sebelum refresh
+            if (typeof updateKacaSuggestionsFromLogs === 'function') {
+              updateKacaSuggestionsFromLogs();
+            }
+            
             // Auto refresh halaman agar data terupdate
             setTimeout(() => {
               location.reload();
-            }, 500); // Delay 500ms untuk memastikan semua update selesai
-            return; // Exit early since we're reloading
+            }, 1); // Delay 500ms untuk memastikan semua update selesai
+            return;
           }
           cancelEdit();
         } else {
@@ -13833,6 +13845,12 @@ No. Kendaraan: ${noKendaraan}
             keluar
           };
           stokData.unshift(newEntry);
+          // Sync dengan window.stokData untuk surat jalan
+          if (typeof window.stokData !== 'undefined' && Array.isArray(window.stokData)) {
+            window.stokData.unshift(newEntry);
+          } else {
+            window.stokData = [...stokData];
+          }
           await addEntry(newEntry);
           showStatus("Data berhasil ditambahkan", "saving");
           setTimeout(() => document.getElementById('statusBar').style.display = 'none', 2000);
@@ -13844,6 +13862,11 @@ No. Kendaraan: ${noKendaraan}
         updateJenisKacaList();
         updateUkuranKacaList();
         
+        // Update dropdown surat jalan tanpa refresh
+        if (typeof updateKacaSuggestionsFromLogs === 'function') {
+          updateKacaSuggestionsFromLogs();
+        }
+        
         // Reset form
         document.getElementById("stokForm").reset();
         document.getElementById("tanggal").value = new Date().toISOString().split('T')[0];
@@ -13854,7 +13877,7 @@ No. Kendaraan: ${noKendaraan}
         // Auto refresh halaman agar data terupdate
         setTimeout(() => {
           location.reload();
-        }, 500); // Delay 500ms untuk memastikan semua update selesai
+        }, 1); // Delay 500ms untuk memastikan semua update selesai
       } catch (error) {
         console.error('Error in tambahData:', error);
         alert("Terjadi kesalahan saat menyimpan data: " + error.message);
@@ -14073,18 +14096,34 @@ No. Kendaraan: ${noKendaraan}
       
       if (confirm("Apakah Anda yakin ingin menghapus data ini?")) {
         try {
+          // Remove from local stokData
           stokData = stokData.filter(entry => entry.id !== id);
+          // Also update window.stokData if it exists (for sync with surat jalan)
+          if (typeof window !== 'undefined' && typeof window.stokData !== 'undefined' && Array.isArray(window.stokData)) {
+            window.stokData = window.stokData.filter(entry => entry.id !== id);
+          }
+          
+          // Delete from IndexedDB
           await deleteEntryFromDB(id);
-          showStatus("Data berhasil dihapus", "saving");
-          setTimeout(() => document.getElementById('statusBar').style.display = 'none', 2000);
+          
+          // Update UI immediately after deletion
           updateStokTable();
           updateTotalSisa();
           updateNamaTokoList();
           updateJenisKacaList();
           updateUkuranKacaList();
+          
+          showStatus("Data berhasil dihapus", "saving");
+          setTimeout(() => {
+            const statusBar = document.getElementById('statusBar');
+            if (statusBar) statusBar.style.display = 'none';
+          }, 2000);
         } catch (error) {
           console.error('Error deleting entry:', error);
           alert("Terjadi kesalahan saat menghapus data: " + error.message);
+          // Still update table even if DB deletion fails
+          updateStokTable();
+          updateTotalSisa();
         }
       }
     }
@@ -23061,22 +23100,34 @@ No. Kendaraan: ${noKendaraan}
               keluar
             };
             stokData[index] = updatedEntry;
+            // Sync dengan window.stokData untuk surat jalan
+            if (typeof window.stokData !== 'undefined' && Array.isArray(window.stokData)) {
+              const windowIndex = window.stokData.findIndex(item => item.id === currentlyEditingId);
+              if (windowIndex !== -1) {
+                window.stokData[windowIndex] = updatedEntry;
+              }
+            }
             await updateEntry(updatedEntry);
             showStatus("Data berhasil diupdate", "saving");
             setTimeout(() => document.getElementById('statusBar').style.display = 'none', 2000);
             
-            // Update tabel dan refresh halaman
+            // Update tabel dan dropdown lists
             updateStokTable();
             updateTotalSisa();
             updateNamaTokoList();
             updateJenisKacaList();
             updateUkuranKacaList();
             
+            // Update dropdown surat jalan sebelum refresh
+            if (typeof updateKacaSuggestionsFromLogs === 'function') {
+              updateKacaSuggestionsFromLogs();
+            }
+            
             // Auto refresh halaman agar data terupdate
             setTimeout(() => {
               location.reload();
             }, 500); // Delay 500ms untuk memastikan semua update selesai
-            return; // Exit early since we're reloading
+            return;
           }
           cancelEdit();
         } else {
@@ -23094,6 +23145,12 @@ No. Kendaraan: ${noKendaraan}
             keluar
           };
           stokData.unshift(newEntry);
+          // Sync dengan window.stokData untuk surat jalan
+          if (typeof window.stokData !== 'undefined' && Array.isArray(window.stokData)) {
+            window.stokData.unshift(newEntry);
+          } else {
+            window.stokData = [...stokData];
+          }
           await addEntry(newEntry);
           showStatus("Data berhasil ditambahkan", "saving");
           setTimeout(() => document.getElementById('statusBar').style.display = 'none', 2000);
@@ -23104,6 +23161,11 @@ No. Kendaraan: ${noKendaraan}
         updateNamaTokoList();
         updateJenisKacaList();
         updateUkuranKacaList();
+        
+        // Update dropdown surat jalan tanpa refresh
+        if (typeof updateKacaSuggestionsFromLogs === 'function') {
+          updateKacaSuggestionsFromLogs();
+        }
         
         // Reset form
         document.getElementById("stokForm").reset();
@@ -23334,18 +23396,34 @@ No. Kendaraan: ${noKendaraan}
       
       if (confirm("Apakah Anda yakin ingin menghapus data ini?")) {
         try {
+          // Remove from local stokData
           stokData = stokData.filter(entry => entry.id !== id);
+          // Also update window.stokData if it exists (for sync with surat jalan)
+          if (typeof window !== 'undefined' && typeof window.stokData !== 'undefined' && Array.isArray(window.stokData)) {
+            window.stokData = window.stokData.filter(entry => entry.id !== id);
+          }
+          
+          // Delete from IndexedDB
           await deleteEntryFromDB(id);
-          showStatus("Data berhasil dihapus", "saving");
-          setTimeout(() => document.getElementById('statusBar').style.display = 'none', 2000);
+          
+          // Update UI immediately after deletion
           updateStokTable();
           updateTotalSisa();
           updateNamaTokoList();
           updateJenisKacaList();
           updateUkuranKacaList();
+          
+          showStatus("Data berhasil dihapus", "saving");
+          setTimeout(() => {
+            const statusBar = document.getElementById('statusBar');
+            if (statusBar) statusBar.style.display = 'none';
+          }, 2000);
         } catch (error) {
           console.error('Error deleting entry:', error);
           alert("Terjadi kesalahan saat menghapus data: " + error.message);
+          // Still update table even if DB deletion fails
+          updateStokTable();
+          updateTotalSisa();
         }
       }
     }
