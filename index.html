@@ -3636,6 +3636,58 @@
         max-height: 300px;
       }
     }
+
+    /* Tooltip for Harga Jual */
+    .price-tooltip {
+        position: absolute;
+        background: #2d3748;
+        color: #fff;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 13px;
+        z-index: 9999;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        white-space: pre-line;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        line-height: 1.4;
+        text-align: left;
+        min-width: 100px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transform: translateY(4px);
+    }
+
+    .price-tooltip.show {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .price-tooltip .tooltip-label {
+        font-size: 11px;
+        color: #a0aec0;
+        margin-bottom: 2px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .price-tooltip .tooltip-value {
+        font-weight: 600;
+        font-size: 14px;
+        color: #fff;
+    }
+
+    .price-tooltip .tooltip-suggestion {
+        color: #63b3ed;
+    }
+
+    @media (max-width: 768px) {
+        .price-tooltip {
+            font-size: 12px;
+            padding: 6px 10px;
+        }
+    }
   </style>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -9429,7 +9481,7 @@ No. Kendaraan: ${noKendaraan}
             nomorSJInput.addEventListener('focus', function() {
                 if (!nomorSJInput.value || nomorSJInput.value.trim() === '') {
                     // Prefill 7-digit default as requested (leading zeros allowed)
-                    nomorSJInput.value = '225';
+                    nomorSJInput.value = '226';
                     // Trigger input event so any bindings/validations refresh
                     nomorSJInput.dispatchEvent(new Event('input', { bubbles: true }));
                 }
@@ -12623,6 +12675,118 @@ No. Kendaraan: ${noKendaraan}
                     // No-op if anything fails; UI remains unaffected
                 }
             })();
+    // Tooltip functionality for Harga Jual
+    const priceTooltip = document.createElement('div');
+    priceTooltip.className = 'price-tooltip';
+    document.body.appendChild(priceTooltip);
+
+    let tooltipShowTimer = null;
+    let tooltipHideTimer = null;
+
+    function showTooltip(target) {
+        // Only show if value exists
+        if (!target.value.trim()) return;
+
+        const rect = target.getBoundingClientRect();
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+        
+        // Format value
+        let content = '';
+        const value = target.value.trim();
+        const cleanValue = value.replace(/[^\d]/g, '');
+        const numValue = parseFloat(cleanValue);
+        
+        if (!isNaN(numValue) && numValue > 0) {
+            const formattedValue = `Rp ${numValue.toLocaleString('id-ID')}`;
+            
+            // Check for suggested price in placeholder
+            const placeholder = target.getAttribute('placeholder') || '';
+            // Only consider placeholder as suggestion if it contains "Rp" and is not the default "Harga Jual"
+            const suggestedPrice = placeholder.includes('Rp') ? placeholder : '';
+            
+            content = `<div class="tooltip-label">Harga Jual:</div><div class="tooltip-value">${formattedValue}</div>`;
+            
+            // Show suggestion if it differs from current value
+            // We compare formatted strings to be safe
+            if (suggestedPrice && suggestedPrice !== formattedValue && suggestedPrice !== 'Harga Jual') {
+                content += `<div class="tooltip-label" style="margin-top:4px;">Harga Beli:</div><div class="tooltip-suggestion">${suggestedPrice}</div>`;
+            }
+        } else {
+            content = `<div class="tooltip-value">${value}</div>`;
+        }
+        
+        priceTooltip.innerHTML = content;
+        
+        // Position tooltip above input
+        priceTooltip.style.top = `${rect.top + scrollTop - priceTooltip.offsetHeight - 8}px`;
+        priceTooltip.style.left = `${rect.left + scrollLeft}px`;
+        
+        priceTooltip.classList.add('show');
+    }
+
+    function hideTooltip() {
+        priceTooltip.classList.remove('show');
+    }
+
+    // Event delegation for tooltip
+    document.addEventListener('mouseover', function(e) {
+        if (e.target.classList && e.target.classList.contains('harga-jual')) {
+            clearTimeout(tooltipHideTimer);
+            clearTimeout(tooltipShowTimer);
+            tooltipShowTimer = setTimeout(() => {
+                showTooltip(e.target);
+            }, 300);
+        }
+    });
+
+    document.addEventListener('mouseout', function(e) {
+        if (e.target.classList && e.target.classList.contains('harga-jual')) {
+            clearTimeout(tooltipShowTimer);
+            tooltipHideTimer = setTimeout(() => {
+                hideTooltip();
+            }, 1000);
+        }
+    });
+
+    // Use capture phase for focus/blur to handle delegation correctly
+    document.addEventListener('focus', function(e) {
+        if (e.target.classList && e.target.classList.contains('harga-jual')) {
+            clearTimeout(tooltipHideTimer);
+            clearTimeout(tooltipShowTimer);
+            tooltipShowTimer = setTimeout(() => {
+                showTooltip(e.target);
+            }, 300);
+        }
+    }, true);
+
+    document.addEventListener('blur', function(e) {
+        if (e.target.classList && e.target.classList.contains('harga-jual')) {
+            clearTimeout(tooltipShowTimer);
+            tooltipHideTimer = setTimeout(() => {
+                hideTooltip();
+            }, 1000);
+        }
+    }, true);
+
+    document.addEventListener('input', function(e) {
+        if (e.target.classList && e.target.classList.contains('harga-jual')) {
+            if (priceTooltip.classList.contains('show')) {
+                // If tooltip is visible, update it immediately to reflect typing
+                showTooltip(e.target);
+            } else if (e.target.value.trim()) {
+                // If user starts typing and value exists, start timer to show
+                clearTimeout(tooltipShowTimer);
+                tooltipShowTimer = setTimeout(() => {
+                    showTooltip(e.target);
+                }, 300);
+            } else {
+                // If value cleared, hide
+                hideTooltip();
+            }
+        }
+    });
+
     </script>
 
 
