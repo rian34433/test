@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -4578,7 +4578,15 @@
         function forceUpdateHargaForUkuran(ukuranInput) {
             if (!ukuranInput || !ukuranInput.value.trim()) return;
             
+            // Respect lock mechanism
+            if (ukuranInput.getAttribute('data-price-locked') === 'true') {
+                console.log('[Force Update] Skipped due to price lock');
+                return;
+            }
+            
             const ukuranValue = ukuranInput.value.trim();
+            console.log(`[Force Update] Processing for value: "${ukuranValue}"`);
+            
             const ukuranList = document.getElementById('datalistUkuran');
             if (!ukuranList) return;
             
@@ -4589,7 +4597,22 @@
             });
             
             if (matchingOptions.length > 0) {
-                // Use smart matching similar to updateHargaFromSelectedUkuran
+                // FIRST: Check if current data-selected-harga is still valid
+                // This preserves user's selection if it's still available
+                const currentHarga = ukuranInput.getAttribute('data-selected-harga') || '';
+                if (currentHarga) {
+                    const matchingByDataHarga = matchingOptions.find(opt => {
+                        const optHarga = opt.getAttribute('data-harga');
+                        return optHarga === currentHarga;
+                    });
+                    if (matchingByDataHarga) {
+                        // Current selection is still valid, keep it and return
+                        console.log('[Force Update] Current selection still valid, skipping update');
+                        return;
+                    }
+                }
+                
+                // If current selection is not valid or not set, find the best match
                 let selectedOption = null;
                 
                 // If multiple options, try to match by harga-jual
@@ -4607,20 +4630,19 @@
                         });
                         if (matchingByHarga) {
                             selectedOption = matchingByHarga;
+                            console.log('[Force Update] Matched by existing price value');
                         }
                     }
                     
-                    // If still no match, try current data-selected-harga
-                    if (!selectedOption) {
-                        const currentHarga = ukuranInput.getAttribute('data-selected-harga') || '';
-                        if (currentHarga) {
-                            const matchingByDataHarga = matchingOptions.find(opt => {
-                                const optHarga = opt.getAttribute('data-harga');
-                                return optHarga === currentHarga;
-                            });
-                            if (matchingByDataHarga) {
-                                selectedOption = matchingByDataHarga;
-                            }
+                    // If still no match, try current data-selected-harga (even if not exact match)
+                    if (!selectedOption && currentHarga) {
+                        const matchingByDataHarga = matchingOptions.find(opt => {
+                            const optHarga = opt.getAttribute('data-harga');
+                            return optHarga === currentHarga;
+                        });
+                        if (matchingByDataHarga) {
+                            selectedOption = matchingByDataHarga;
+                             console.log('[Force Update] Matched by previous selected price');
                         }
                     }
                 }
@@ -4628,15 +4650,38 @@
                 // If still no match, use first option
                 if (!selectedOption) {
                     selectedOption = matchingOptions[0];
+                    console.log('[Force Update] Fallback to first match');
                 }
                 
-                // Update data-selected-harga
+                // Update data-selected-harga only if we found a different option
                 const hargaAttr = selectedOption.getAttribute('data-harga');
                 if (hargaAttr) {
+                    console.log(`[Force Update] Selected price: ${hargaAttr}`);
+                    // Always update attributes
                     ukuranInput.setAttribute('data-selected-harga', hargaAttr);
                     const row = ukuranInput.closest('tr');
+                    let hargaJualInput = null;
                     if (row) {
                         row.setAttribute('data-selected-harga', hargaAttr);
+                        hargaJualInput = row.querySelector('.harga-jual');
+                    }
+                    
+                    // Also update harga-jual placeholder if it exists
+                    if (hargaJualInput) {
+                        const hargaValues = hargaAttr.split(',').map(h => h.trim()).filter(h => h);
+                        if (hargaValues.length > 0) {
+                            const firstHarga = parseFloat(hargaValues[0]);
+                            if (!isNaN(firstHarga) && firstHarga > 0) {
+                                // Only update placeholder if field is empty
+                                if (!hargaJualInput.value.trim()) {
+                                    const newPlaceholder = `Rp ${firstHarga.toLocaleString('id-ID')}`;
+                                    if (hargaJualInput.placeholder !== newPlaceholder) {
+                                        hargaJualInput.placeholder = newPlaceholder;
+                                        console.log(`[Force Update] Updated placeholder to: ${newPlaceholder}`);
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -6022,6 +6067,210 @@ No. Kendaraan: ${noKendaraan}
         // Fungsi untuk generate baris default tabel kaca
         // Removed generateDefaultKacaRows (not used anymore)
 
+        // Global helper for caching datalist
+        let _globalCachedUkuranList = null;
+        function getGlobalUkuranList() {
+            if (!_globalCachedUkuranList) {
+                _globalCachedUkuranList = document.getElementById('datalistUkuran');
+            }
+            return _globalCachedUkuranList;
+        }
+
+        // Global function for update harga ukuran logic
+        function updateHargaUkuranLogic(inputElement, forceUpdate = false, explicitSize = null, explicitPrice = null) {
+            const originalValue = inputElement.value.trim();
+            
+            console.log(`[Price Update] Processing update for value: "${originalValue}", force: ${forceUpdate}`);
+            
+            // Check for price suffix from unique options (e.g. "10x10 (Rp 5.000)")
+            const priceMatch = originalValue.match(/(.*)\s+\(Rp\s+[\d\.,]+\)$/);
+            let cleanValue = originalValue;
+            let hasPriceSuffix = false;
+            
+            if (priceMatch) {
+                cleanValue = priceMatch[1].trim();
+                hasPriceSuffix = true;
+                console.log(`[Price Update] Detected price suffix. Clean value: "${cleanValue}"`);
+            }
+
+            const currentHarga = inputElement.getAttribute('data-selected-harga') || '';
+            
+            // Use passed explicit values or get from attributes
+            const lockSize = explicitSize || inputElement.getAttribute('data-explicit-size');
+            const lockPrice = explicitPrice || inputElement.getAttribute('data-explicit-price');
+            
+            // Get current harga from harga-jual input field for better matching
+            const row = inputElement.closest('tr');
+            const hargaJualInput = row ? row.querySelector('.harga-jual') : null;
+            const currentHargaJual = hargaJualInput ? hargaJualInput.value.trim().replace(/[^\d]/g, '') : '';
+            
+            // State management on element
+            const lastUkuranValue = inputElement._lastUkuranValue || '';
+            const lastSelectedHarga = inputElement._lastSelectedHarga || '';
+            
+            // Update if value changed OR if harga might have changed (same ukuran, different harga)
+            // Also force update if explicitly requested
+            if (!forceUpdate && cleanValue === lastUkuranValue && cleanValue && currentHarga === lastSelectedHarga && !hasPriceSuffix) {
+                console.log('[Price Update] Skipping update - no changes detected');
+                return;
+            }
+            
+            // If user clears input, clear explicit locks
+            if (!cleanValue) {
+                inputElement.removeAttribute('data-explicit-size');
+                inputElement.removeAttribute('data-explicit-price');
+            }
+
+            // Check if we have an explicit lock and the size hasn't changed
+            // This ensures that if the user selected a specific price, we stick to it
+            // even if the input value is just the size (without suffix)
+            let lockedPrice = null;
+            if (lockSize && lockPrice && cleanValue === lockSize) {
+                 console.log(`[Price Update] Using explicit lock for size "${lockSize}" with price "${lockPrice}"`);
+                 lockedPrice = lockPrice;
+                 // Ensure attributes are set if they were passed as args
+                 if (explicitSize) inputElement.setAttribute('data-explicit-size', explicitSize);
+                 if (explicitPrice) inputElement.setAttribute('data-explicit-price', explicitPrice);
+            } else if (cleanValue !== lockSize && lockSize) {
+                 // Size changed, clear lock
+                 console.log('[Price Update] Size changed, clearing explicit lock');
+                 inputElement.removeAttribute('data-explicit-size');
+                 inputElement.removeAttribute('data-explicit-price');
+            }
+            
+            inputElement._lastUkuranValue = cleanValue;
+            
+            if (cleanValue) {
+                const ukuranList = getGlobalUkuranList();
+                if (ukuranList) {
+                    // Find all matching options (same ukuran might have different harga)
+                    const matchingOptions = Array.from(ukuranList.options).filter(opt => {
+                        const optValue = opt.value.trim();
+                        const optDisplay = opt.textContent.trim();
+                        
+                        // If input has suffix, we look for exact match first
+                        if (hasPriceSuffix) {
+                            return optValue === originalValue;
+                        }
+                        
+                        // Otherwise match base value
+                        // We need to handle options that might have suffixes
+                        const optValueClean = optValue.replace(/\s+\(Rp\s+[\d\.,]+\)$/, '');
+                        return optValueClean === cleanValue || optDisplay.startsWith(cleanValue);
+                    });
+                    
+                    // If multiple options found, use smart matching
+                    let selectedOption = null;
+                    if (matchingOptions.length > 0) {
+                        console.log(`[Price Update] Found ${matchingOptions.length} matching options`);
+                        
+                        // PRIORITY 1: Explicit Locked Price
+                        if (lockedPrice) {
+                            selectedOption = matchingOptions.find(opt => {
+                                const optHarga = opt.getAttribute('data-harga');
+                                return optHarga === lockedPrice;
+                            });
+                            if (selectedOption) console.log('[Price Update] Matched by explicit lock');
+                        }
+
+                        // PRIORITY 2: Exact string match (e.g. user typed suffix)
+                        if (!selectedOption) {
+                            selectedOption = matchingOptions.find(opt => {
+                                const optValue = opt.value.trim();
+                                return optValue === originalValue;
+                            });
+                        }
+                        
+                        // PRIORITY 3: Match clean value (size)
+                        if (!selectedOption) {
+                            // Filter options that match the clean size
+                            const sizeMatches = matchingOptions.filter(opt => {
+                                 const optValueClean = opt.value.trim().replace(/\s+\(Rp\s+[\d\.,]+\)$/, '');
+                                 return optValueClean === cleanValue;
+                            });
+
+                            if (sizeMatches.length > 0) {
+                                // If we have multiple prices for this size
+                                if (sizeMatches.length > 1) {
+                                    // Try to match with current harga-jual value if available
+                                    if (currentHargaJual) {
+                                        const matchingByHarga = sizeMatches.find(opt => {
+                                            const optHarga = opt.getAttribute('data-harga');
+                                            if (!optHarga) return false;
+                                            const hargaValues = optHarga.split(',').map(h => h.trim().replace(/[^\d]/g, ''));
+                                            return hargaValues.includes(currentHargaJual);
+                                        });
+                                        if (matchingByHarga) {
+                                            selectedOption = matchingByHarga;
+                                            console.log('[Price Update] Matched by existing price value');
+                                        }
+                                    }
+                                    
+                                    // If no price match, default to the first one (or previous selection if valid)
+                                    if (!selectedOption && currentHarga) {
+                                         const matchingByDataHarga = sizeMatches.find(opt => opt.getAttribute('data-harga') === currentHarga);
+                                         if (matchingByDataHarga) selectedOption = matchingByDataHarga;
+                                    }
+                                    
+                                    if (!selectedOption) selectedOption = sizeMatches[0];
+                                } else {
+                                    selectedOption = sizeMatches[0];
+                                }
+                            }
+                        }
+                    }
+                    
+                    if (selectedOption) {
+                        const hargaAttr = selectedOption.getAttribute('data-harga');
+                        console.log(`[Price Update] Selected price: ${hargaAttr}`);
+                        
+                        if (hargaAttr) {
+                            // Always update attributes
+                            inputElement.setAttribute('data-selected-harga', hargaAttr);
+                            // Also save to row for easy access
+                            if (row) {
+                                row.setAttribute('data-selected-harga', hargaAttr);
+                            }
+                            inputElement._lastSelectedHarga = hargaAttr;
+
+                            // SET EXPLICIT LOCK if we have a suffix or user is selecting or explicit lock was passed
+                            // This ensures subsequent updates (e.g. blur) stick to this price
+                            if (hasPriceSuffix || forceUpdate || explicitPrice) {
+                                inputElement.setAttribute('data-explicit-size', cleanValue);
+                                inputElement.setAttribute('data-explicit-price', hargaAttr);
+                                console.log(`[Price Update] Set explicit lock: Size=${cleanValue}, Price=${hargaAttr}`);
+                            }
+                            
+                            // Also update harga-jual field if it's empty or different
+                            if (hargaJualInput) {
+                                const hargaValues = hargaAttr.split(',').map(h => h.trim()).filter(h => h);
+                                if (hargaValues.length > 0) {
+                                    const firstHarga = parseFloat(hargaValues[0]);
+                                    if (!isNaN(firstHarga) && firstHarga > 0) {
+                                        // Always update placeholder to reflect current selection
+                                        const newPlaceholder = `Rp ${firstHarga.toLocaleString('id-ID')}`;
+                                        if (hargaJualInput.placeholder !== newPlaceholder) {
+                                            hargaJualInput.placeholder = newPlaceholder;
+                                            console.log(`[Price Update] Updated placeholder to: ${newPlaceholder}`);
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            // Clean input value if it had a suffix to show only size
+                            if (hasPriceSuffix) {
+                                inputElement.value = cleanValue;
+                                // Update tracking to prevent loops if needed, though handled at start
+                                if (inputElement._lastUkuranValue !== cleanValue) {
+                                    inputElement._lastUkuranValue = cleanValue;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         // Fungsi untuk menambah baris baru
         function addKacaRow() {
             try {
@@ -6089,14 +6338,11 @@ No. Kendaraan: ${noKendaraan}
                     ukuranInput.setAttribute('autocomplete', 'off');
                     ukuranInput.setAttribute('autocapitalize', 'none');
                     ukuranInput.setAttribute('spellcheck', 'false');
-                    // Use a flag to prevent multiple updates in quick succession
-                    let lastUpdateTime = 0;
-                    let isSelectingFromDatalist = false;
-                    let lastUkuranValue = '';
-                    let lastSelectedHarga = '';
-                    const UPDATE_THROTTLE = 500; // milliseconds
                     
-                    // Debounce utility function for performance optimization
+                    // Use a flag to prevent multiple updates in quick succession
+                    let isSelectingFromDatalist = false;
+                    
+                    // Debounce utility function
                     const debounce = (func, wait) => {
                         let timeout;
                         return function executedFunction(...args) {
@@ -6109,149 +6355,12 @@ No. Kendaraan: ${noKendaraan}
                         };
                     };
                     
-                    // Cache DOM elements for better performance
-                    let cachedUkuranList = null;
-                    const getUkuranList = () => {
-                        if (!cachedUkuranList) {
-                            cachedUkuranList = document.getElementById('datalistUkuran');
-                        }
-                        return cachedUkuranList;
-                    };
-                    
                     // Helper function to update harga from selected ukuran
                     const updateHargaFromSelectedUkuran = function(inputElement, forceUpdate = false) {
-                        const ukuranValue = inputElement.value.trim();
-                        const currentHarga = inputElement.getAttribute('data-selected-harga') || '';
-                        
-                        // Get current harga from harga-jual input field for better matching
-                        const row = inputElement.closest('tr');
-                        const hargaJualInput = row ? row.querySelector('.harga-jual') : null;
-                        const currentHargaJual = hargaJualInput ? hargaJualInput.value.trim().replace(/[^\d]/g, '') : '';
-                        
-                        // Update if value changed OR if harga might have changed (same ukuran, different harga)
-                        // Also force update if explicitly requested
-                        if (!forceUpdate && ukuranValue === lastUkuranValue && ukuranValue && currentHarga === lastSelectedHarga) {
-                            return;
-                        }
-                        
-                        lastUkuranValue = ukuranValue;
-                        
-                        if (ukuranValue) {
-                            const ukuranList = getUkuranList();
-                            if (ukuranList) {
-                                // Find all matching options (same ukuran might have different harga)
-                                const matchingOptions = Array.from(ukuranList.options).filter(opt => {
-                                    const optValue = opt.value.trim();
-                                    const optDisplay = opt.textContent.trim();
-                                    // Check if ukuranValue matches the base value (before stock info)
-                                    return optValue === ukuranValue || optDisplay.startsWith(ukuranValue);
-                                });
-                                
-                                // If multiple options found, use smart matching
-                                let selectedOption = null;
-                                if (matchingOptions.length > 0) {
-                                    // First try exact match on value
-                                    selectedOption = matchingOptions.find(opt => {
-                                        const optValue = opt.value.trim();
-                                        return optValue === ukuranValue;
-                                    });
-                                    
-                                    // If multiple exact matches (same ukuran, different harga), try to match by harga
-                                    if (!selectedOption || matchingOptions.filter(opt => opt.value.trim() === ukuranValue).length > 1) {
-                                        // Try to match with current harga-jual value if available
-                                        if (currentHargaJual) {
-                                            const matchingByHarga = matchingOptions.find(opt => {
-                                                const optHarga = opt.getAttribute('data-harga');
-                                                if (!optHarga) return false;
-                                                const hargaValues = optHarga.split(',').map(h => h.trim().replace(/[^\d]/g, ''));
-                                                return hargaValues.includes(currentHargaJual);
-                                            });
-                                            if (matchingByHarga) {
-                                                selectedOption = matchingByHarga;
-                                            }
-                                        }
-                                        
-                                        // If still no match, try to match with current data-selected-harga
-                                        if (!selectedOption && currentHarga) {
-                                            const matchingByDataHarga = matchingOptions.find(opt => {
-                                                const optHarga = opt.getAttribute('data-harga');
-                                                return optHarga === currentHarga;
-                                            });
-                                            if (matchingByDataHarga) {
-                                                selectedOption = matchingByDataHarga;
-                                            }
-                                        }
-                                        
-                                        // If still no match, use first exact match or first match
-                                        if (!selectedOption) {
-                                            selectedOption = matchingOptions.find(opt => opt.value.trim() === ukuranValue) || matchingOptions[0];
-                                        }
-                                    }
-                                }
-                                
-                                if (selectedOption) {
-                                    const hargaAttr = selectedOption.getAttribute('data-harga');
-                                    if (hargaAttr) {
-                                        // Always update to ensure harga is current (even if same, to refresh)
-                                        // Save harga to data attribute on the input
-                                        inputElement.setAttribute('data-selected-harga', hargaAttr);
-                                        // Also save to row for easy access
-                                        if (row) {
-                                            row.setAttribute('data-selected-harga', hargaAttr);
-                                        }
-                                        lastSelectedHarga = hargaAttr;
-                                        
-                                        // Also update harga-jual field if it's empty or different
-                                        if (hargaJualInput) {
-                                            const hargaValues = hargaAttr.split(',').map(h => h.trim()).filter(h => h);
-                                            if (hargaValues.length > 0) {
-                                                const firstHarga = parseFloat(hargaValues[0]);
-                                                if (!isNaN(firstHarga) && firstHarga > 0) {
-                                                    const currentHargaValue = parseFloat(hargaJualInput.value.replace(/[^\d]/g, '')) || 0;
-                                                    // Check if harga jual was manually set (e.g., loaded from log or user input)
-                                                    const isManualHarga = hargaJualInput.getAttribute('data-manual-harga') === 'true';
-                                                    // Only update if harga jual field is empty or zero AND not manually set
-                                                    // This ensures that harga jual loaded from log or entered by user is not overwritten
-                                                    if (!isManualHarga && (currentHargaValue === 0 || !hargaJualInput.value.trim())) {
-                                                        hargaJualInput.value = firstHarga.toLocaleString('id-ID');
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    } else {
-                                        // Clear harga if no match found
-                                        if (currentHarga) {
-                                            inputElement.removeAttribute('data-selected-harga');
-                                            if (row) {
-                                                row.removeAttribute('data-selected-harga');
-                                            }
-                                            lastSelectedHarga = '';
-                                        }
-                                    }
-                                } else {
-                                    // Clear harga if no option found
-                                    if (currentHarga) {
-                                        inputElement.removeAttribute('data-selected-harga');
-                                        if (row) {
-                                            row.removeAttribute('data-selected-harga');
-                                        }
-                                        lastSelectedHarga = '';
-                                    }
-                                }
-                            }
-                        } else {
-                            // Clear harga if value is empty
-                            if (currentHarga) {
-                                inputElement.removeAttribute('data-selected-harga');
-                                if (row) {
-                                    row.removeAttribute('data-selected-harga');
-                                }
-                                lastSelectedHarga = '';
-                            }
-                        }
+                        updateHargaUkuranLogic(inputElement, forceUpdate);
                     };
                     
-                    // Debounced update function (300ms delay for input events to reduce excessive calls)
+                    // Debounced update function
                     const debouncedUpdateHarga = debounce((input) => {
                         updateHargaFromSelectedUkuran(input, true);
                     }, 300);
@@ -6259,60 +6368,40 @@ No. Kendaraan: ${noKendaraan}
                     // Track when user selects from datalist
                     ukuranInput.addEventListener('change', function() {
                         isSelectingFromDatalist = true;
-                        lastUpdateTime = Date.now();
-                        // Force update to ensure harga is refreshed (immediate, no debounce)
+                        // Force update
                         updateHargaFromSelectedUkuran(this, true);
-                        
-                        // Reset flag after a delay
                         setTimeout(() => {
                             isSelectingFromDatalist = false;
                         }, 1000);
                     });
                     
-                    // Listen to input event with debouncing for better performance
+                    // Listen to input event with debouncing
                     ukuranInput.addEventListener('input', function() {
-                        // Use debounced update to reduce excessive function calls
                         debouncedUpdateHarga(this);
                     });
                     
-                    // Listen to blur event to catch selections that might not trigger change
+                    // Listen to blur event
                     ukuranInput.addEventListener('blur', function() {
-                        // Immediate update on blur (no debounce needed)
                         setTimeout(() => {
                             updateHargaFromSelectedUkuran(this, true);
                         }, 150);
                     });
                     
-                    // Listen to keyup for Enter/Tab key selections
+                    // Listen to keyup for Enter/Tab
                     ukuranInput.addEventListener('keyup', function(e) {
                         if (e.key === 'Enter' || e.key === 'Tab' || e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-                            // Immediate update for keyboard navigation (no debounce)
                             setTimeout(() => {
                                 updateHargaFromSelectedUkuran(this, true);
                             }, 100);
                         }
                     });
                     
-                    // Polling removed for better performance - using event-driven approach instead
-                    // This eliminates memory leaks and reduces CPU usage significantly
-                    
                     // Always update datalist based on jenis kaca from the same row when focused
                     ukuranInput.addEventListener('focus', function() {
-                        // Reset tracking to force update on focus
-                        lastUkuranValue = '';
-                        lastSelectedHarga = '';
-                        
                         // Prevent update if user just selected from datalist
                         if (isSelectingFromDatalist) {
                             return;
                         }
-                        
-                        const now = Date.now();
-                        // Prevent update if it was just updated recently (e.g., after selecting from datalist)
-                        if (now - lastUpdateTime < UPDATE_THROTTLE) {
-                            return;
-                        }
-                        lastUpdateTime = now;
                         
                         const row = this.closest('tr');
                         const jenisInput = row ? row.querySelector('input.jenis-kaca') : null;
@@ -6322,13 +6411,7 @@ No. Kendaraan: ${noKendaraan}
                         } else {
                             updateKacaSuggestionsFromLogs();
                         }
-                        
-                        // Force update harga after updating datalist
-                        setTimeout(() => {
-                            updateHargaFromSelectedUkuran(this, true);
-                        }, 100);
                     });
-                    // Remove input event listener to prevent dropdown from appearing again after selection
                 }
                 
                 // Update grand total setelah tambah baris
@@ -10007,14 +10090,11 @@ No. Kendaraan: ${noKendaraan}
                     ukuranEl.setAttribute('autocomplete', 'off');
                     ukuranEl.setAttribute('autocapitalize', 'none');
                     ukuranEl.setAttribute('spellcheck', 'false');
-                    // Use a flag to prevent multiple updates in quick succession
-                    let lastUpdateTime = 0;
-                    let isSelectingFromDatalist = false;
-                    let lastUkuranValue = '';
-                    let lastSelectedHarga = '';
-                    const UPDATE_THROTTLE = 500; // milliseconds
                     
-                    // Debounce utility function for performance optimization
+                    // Use a flag to prevent multiple updates in quick succession
+                    let isSelectingFromDatalist = false;
+                    
+                    // Debounce utility function
                     const debounce = (func, wait) => {
                         let timeout;
                         return function executedFunction(...args) {
@@ -10027,385 +10107,59 @@ No. Kendaraan: ${noKendaraan}
                         };
                     };
                     
-                    // Cache DOM elements for better performance
-                    let cachedUkuranList = null;
-                    const getUkuranList = () => {
-                        if (!cachedUkuranList) {
-                            cachedUkuranList = document.getElementById('datalistUkuran');
-                        }
-                        return cachedUkuranList;
-                    };
-                    
                     // Helper function to update harga from selected ukuran
                     const updateHargaFromSelectedUkuran = function(inputElement, forceUpdate = false) {
-                        const ukuranValue = inputElement.value.trim();
-                        const currentHarga = inputElement.getAttribute('data-selected-harga') || '';
-                        
-                        // Get current harga from harga-jual input field for better matching
-                        const row = inputElement.closest('tr');
-                        const hargaJualInput = row ? row.querySelector('.harga-jual') : null;
-                        const currentHargaJual = hargaJualInput ? hargaJualInput.value.trim().replace(/[^\d]/g, '') : '';
-                        
-                        // Update if value changed OR if harga might have changed (same ukuran, different harga)
-                        // Also force update if explicitly requested
-                        if (!forceUpdate && ukuranValue === lastUkuranValue && ukuranValue && currentHarga === lastSelectedHarga) {
-                            return;
-                        }
-                        
-                        lastUkuranValue = ukuranValue;
-                        
-                        if (ukuranValue) {
-                            const ukuranList = getUkuranList();
-                            if (ukuranList) {
-                                // Find all matching options (same ukuran might have different harga)
-                                const matchingOptions = Array.from(ukuranList.options).filter(opt => {
-                                    const optValue = opt.value.trim();
-                                    const optDisplay = opt.textContent.trim();
-                                    // Check if ukuranValue matches the base value (before stock info)
-                                    return optValue === ukuranValue || optDisplay.startsWith(ukuranValue);
-                                });
-                                
-                                // If multiple options found, use smart matching
-                                let selectedOption = null;
-                                if (matchingOptions.length > 0) {
-                                    // First try exact match on value
-                                    selectedOption = matchingOptions.find(opt => {
-                                        const optValue = opt.value.trim();
-                                        return optValue === ukuranValue;
-                                    });
-                                    
-                                    // If multiple exact matches (same ukuran, different harga), try to match by harga
-                                    if (!selectedOption || matchingOptions.filter(opt => opt.value.trim() === ukuranValue).length > 1) {
-                                        // Try to match with current harga-jual value if available
-                                        if (currentHargaJual) {
-                                            const matchingByHarga = matchingOptions.find(opt => {
-                                                const optHarga = opt.getAttribute('data-harga');
-                                                if (!optHarga) return false;
-                                                const hargaValues = optHarga.split(',').map(h => h.trim().replace(/[^\d]/g, ''));
-                                                return hargaValues.includes(currentHargaJual);
-                                            });
-                                            if (matchingByHarga) {
-                                                selectedOption = matchingByHarga;
-                                            }
-                                        }
-                                        
-                                        // If still no match, try to match with current data-selected-harga
-                                        if (!selectedOption && currentHarga) {
-                                            const matchingByDataHarga = matchingOptions.find(opt => {
-                                                const optHarga = opt.getAttribute('data-harga');
-                                                return optHarga === currentHarga;
-                                            });
-                                            if (matchingByDataHarga) {
-                                                selectedOption = matchingByDataHarga;
-                                            }
-                                        }
-                                        
-                                        // If still no match, use first exact match or first match
-                                        if (!selectedOption) {
-                                            selectedOption = matchingOptions.find(opt => opt.value.trim() === ukuranValue) || matchingOptions[0];
-                                        }
-                                    }
-                                }
-                                
-                                if (selectedOption) {
-                                    const hargaAttr = selectedOption.getAttribute('data-harga');
-                                    if (hargaAttr) {
-                                        // Always update to ensure harga is current (even if same, to refresh)
-                                        // Save harga to data attribute on the input
-                                        inputElement.setAttribute('data-selected-harga', hargaAttr);
-                                        // Also save to row for easy access
-                                        if (row) {
-                                            row.setAttribute('data-selected-harga', hargaAttr);
-                                        }
-                                        lastSelectedHarga = hargaAttr;
-                                        
-                                        // Also update harga-jual field if it's empty or different
-                                        if (hargaJualInput) {
-                                            const hargaValues = hargaAttr.split(',').map(h => h.trim()).filter(h => h);
-                                            if (hargaValues.length > 0) {
-                                                const firstHarga = parseFloat(hargaValues[0]);
-                                                if (!isNaN(firstHarga) && firstHarga > 0) {
-                                                    const currentHargaValue = parseFloat(hargaJualInput.value.replace(/[^\d]/g, '')) || 0;
-                                                    // Check if harga jual was manually set (e.g., loaded from log or user input)
-                                                    const isManualHarga = hargaJualInput.getAttribute('data-manual-harga') === 'true';
-                                                    // Only update if harga jual field is empty or zero AND not manually set
-                                                    // This ensures that harga jual loaded from log or entered by user is not overwritten
-                                                    if (!isManualHarga && (currentHargaValue === 0 || !hargaJualInput.value.trim())) {
-                                                        hargaJualInput.value = firstHarga.toLocaleString('id-ID');
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    } else {
-                                        // Clear harga if no match found
-                                        if (currentHarga) {
-                                            inputElement.removeAttribute('data-selected-harga');
-                                            if (row) {
-                                                row.removeAttribute('data-selected-harga');
-                                            }
-                                            lastSelectedHarga = '';
-                                        }
-                                    }
-                                } else {
-                                    // Clear harga if no option found
-                                    if (currentHarga) {
-                                        inputElement.removeAttribute('data-selected-harga');
-                                        if (row) {
-                                            row.removeAttribute('data-selected-harga');
-                                        }
-                                        lastSelectedHarga = '';
-                                    }
-                                }
-                            }
-                        } else {
-                            // Clear harga if value is empty
-                            if (currentHarga) {
-                                inputElement.removeAttribute('data-selected-harga');
-                                if (row) {
-                                    row.removeAttribute('data-selected-harga');
-                                }
-                                lastSelectedHarga = '';
-                            }
-                        }
+                        updateHargaUkuranLogic(inputElement, forceUpdate);
                     };
+                    
+                    // Debounced update function
+                    const debouncedUpdateHarga = debounce((input) => {
+                        updateHargaFromSelectedUkuran(input, true);
+                    }, 300);
                     
                     // Track when user selects from datalist
                     ukuranEl.addEventListener('change', function() {
                         isSelectingFromDatalist = true;
-                        lastUpdateTime = Date.now();
-                        
-                        const ukuranValue = this.value.trim();
-                        const currentHarga = this.getAttribute('data-selected-harga') || '';
-                        
-                        // Check if harga will change by finding the selected option
-                        const ukuranList = document.getElementById('datalistUkuran');
-                        let newHarga = '';
-                        let selectedOption = null;
-                        
-                        if (ukuranList && ukuranValue) {
-                            // Find all matching options (same ukuran might have different harga)
-                            const matchingOptions = Array.from(ukuranList.options).filter(opt => {
-                                const optValue = opt.value.trim();
-                                return optValue === ukuranValue;
-                            });
-                            
-                            if (matchingOptions.length > 0) {
-                                // If multiple options with same ukuran but different harga, use smart matching
-                                if (matchingOptions.length > 1) {
-                                    // Try to match with current harga-jual value
-                                    const row = this.closest('tr');
-                                    const hargaJualInput = row ? row.querySelector('.harga-jual') : null;
-                                    const currentHargaJual = hargaJualInput ? hargaJualInput.value.trim().replace(/[^\d]/g, '') : '';
-                                    
-                                    if (currentHargaJual) {
-                                        const matchingByHarga = matchingOptions.find(opt => {
-                                            const optHarga = opt.getAttribute('data-harga');
-                                            if (!optHarga) return false;
-                                            const hargaValues = optHarga.split(',').map(h => h.trim().replace(/[^\d]/g, ''));
-                                            return hargaValues.includes(currentHargaJual);
-                                        });
-                                        if (matchingByHarga) {
-                                            selectedOption = matchingByHarga;
-                                        }
-                                    }
-                                    
-                                    // If still no match, try to match with current data-selected-harga
-                                    if (!selectedOption && currentHarga) {
-                                        const matchingByDataHarga = matchingOptions.find(opt => {
-                                            const optHarga = opt.getAttribute('data-harga');
-                                            return optHarga === currentHarga;
-                                        });
-                                        if (matchingByDataHarga) {
-                                            selectedOption = matchingByDataHarga;
-                                        }
-                                    }
-                                    
-                                    // If still no match, use first option
-                                    if (!selectedOption) {
-                                        selectedOption = matchingOptions[0];
-                                    }
-                                } else {
-                                    selectedOption = matchingOptions[0];
-                                }
-                                
-                                newHarga = selectedOption ? selectedOption.getAttribute('data-harga') || '' : '';
-                            }
-                        }
-                        
-                        // If harga is different or ukuran value changed, clear and reset value to force update
-                        if (ukuranValue && (newHarga !== currentHarga || ukuranValue !== lastUkuranValue)) {
-                            // Store the value to restore
-                            const valueToRestore = ukuranValue;
-                            // Clear field first to force change detection
-                            this.value = '';
-                            // Reset tracking
-                            lastUkuranValue = '';
-                            lastSelectedHarga = '';
-                            
-                            // Set value again after a brief delay to trigger change event and update harga
-                            requestAnimationFrame(() => {
-                                this.value = valueToRestore;
-                                // Force update harga immediately
-                                updateHargaFromSelectedUkuran(this, true);
-                                // Also update with slight delay for better coverage
-                                setTimeout(() => {
-                                    updateHargaFromSelectedUkuran(this, true);
-                                }, 50);
-                            });
-                        } else {
-                            // Reset tracking to force fresh update
-                            lastUkuranValue = '';
-                            lastSelectedHarga = '';
-                            // Force update immediately and with delay for better coverage
-                            updateHargaFromSelectedUkuran(this, true);
-                            requestAnimationFrame(() => {
-                                updateHargaFromSelectedUkuran(this, true);
-                            });
-                            setTimeout(() => {
-                                updateHargaFromSelectedUkuran(this, true);
-                            }, 50);
-                        }
-                        
-                        // Reset flag after a delay
+                        // Force update
+                        updateHargaFromSelectedUkuran(this, true);
                         setTimeout(() => {
                             isSelectingFromDatalist = false;
                         }, 1000);
                     });
                     
-                    // Also listen to input event for more responsive updates
+                    // Listen to input event with debouncing
                     ukuranEl.addEventListener('input', function() {
-                        // Reset tracking on input to force update
-                        lastUkuranValue = '';
-                        lastSelectedHarga = '';
-                        // Force update on input to catch typing changes
-                        updateHargaFromSelectedUkuran(this, true);
-                        // Also update with slight delay to catch autocomplete selections
-                        requestAnimationFrame(() => {
-                            updateHargaFromSelectedUkuran(this, true);
-                        });
+                        debouncedUpdateHarga(this);
                     });
                     
-                    // Listen to blur event to catch selections that might not trigger change
+                    // Listen to blur event
                     ukuranEl.addEventListener('blur', function() {
-                        // Reset tracking on blur
-                        lastUkuranValue = '';
-                        lastSelectedHarga = '';
                         setTimeout(() => {
-                            // Force update on blur to catch any missed changes
                             updateHargaFromSelectedUkuran(this, true);
-                        }, 100);
+                        }, 150);
                     });
                     
-                    // Listen to keydown for immediate response on Enter/Tab
-                    ukuranEl.addEventListener('keydown', function(e) {
-                        if (e.key === 'Enter' || e.key === 'Tab') {
-                            // Reset tracking
-                            lastUkuranValue = '';
-                            lastSelectedHarga = '';
-                            // Update immediately
-                            requestAnimationFrame(() => {
-                                updateHargaFromSelectedUkuran(this, true);
-                            });
-                        }
-                    });
-                    
-                    // Listen to keyup for ArrowDown/ArrowUp key selections
+                    // Listen to keyup for Enter/Tab
                     ukuranEl.addEventListener('keyup', function(e) {
-                        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-                            // Reset tracking
-                            lastUkuranValue = '';
-                            lastSelectedHarga = '';
+                        if (e.key === 'Enter' || e.key === 'Tab' || e.key === 'ArrowDown' || e.key === 'ArrowUp') {
                             setTimeout(() => {
-                                // Force update when navigating with arrow keys
                                 updateHargaFromSelectedUkuran(this, true);
-                            }, 50);
+                            }, 100);
                         }
                     });
                     
-                    // Listen to custom event when datalist is updated
-                    ukuranEl.addEventListener('datalistUpdated', function() {
-                        // Reset tracking to force fresh update
-                        lastUkuranValue = '';
-                        lastSelectedHarga = '';
-                        // Force update when datalist changes
-                        updateHargaFromSelectedUkuran(this, true);
-                    });
-                    
-                    // Polling to check for changes (as fallback for better responsiveness)
-                    let pollingInterval = setInterval(() => {
-                        const currentValue = ukuranEl.value.trim();
-                        const currentHarga = ukuranEl.getAttribute('data-selected-harga') || '';
-                        // Update if value changed OR if we need to refresh harga
-                        if (currentValue !== lastUkuranValue || currentHarga !== lastSelectedHarga) {
-                            // Reset tracking to force update
-                            lastUkuranValue = '';
-                            lastSelectedHarga = '';
-                            updateHargaFromSelectedUkuran(ukuranEl, true);
-                        }
-                    }, 100); // Check every 100ms for better responsiveness
-                    
-                    // Always update datalist based on jenis kaca from the same row when focused
-                    ukuranEl.addEventListener('focus', function() {
-                        // Reset tracking to force update on focus
-                        lastUkuranValue = '';
-                        lastSelectedHarga = '';
-                        
-                        // Prevent update if user just selected from datalist
-                        if (isSelectingFromDatalist) {
-                            return;
-                        }
-                        
-                        const now = Date.now();
-                        // Prevent update if it was just updated recently (e.g., after selecting from datalist)
-                        if (now - lastUpdateTime < UPDATE_THROTTLE) {
-                            return;
-                        }
-                        lastUpdateTime = now;
-                        
-                        const row = this.closest('tr');
-                        const jenisInput = row ? row.querySelector('input.jenis-kaca') : null;
-                        const jenisValue = jenisInput ? jenisInput.value.trim() : '';
-                        if (jenisValue) {
-                            updateUkuranByJenisKaca(jenisValue, this);
-                        } else {
-                            updateKacaSuggestionsFromLogs();
-                        }
-                        
-                        // Force update harga after updating datalist
-                        setTimeout(() => {
-                            updateHargaFromSelectedUkuran(this, true);
-                        }, 100);
-                    });
-                    
-                    // After setting value, update harga from current ukuran value
-                    // This ensures harga is set correctly when data is loaded
-                    // Reset tracking variables to force update
-                    lastUkuranValue = '';
-                    lastSelectedHarga = '';
-                    
-                    // First, update datalist based on jenis kaca if available
+                    // Initial update based on loaded data
                     if (jenisEl && jenisEl.value.trim() && ukuranEl.value.trim()) {
-                        // Update datalist first
                         updateUkuranByJenisKaca(jenisEl.value.trim(), ukuranEl);
-                        // Then update harga after datalist is updated
                         setTimeout(() => {
                             if (ukuranEl.value.trim()) {
-                                // Reset tracking again before update to ensure fresh update
-                                lastUkuranValue = '';
-                                lastSelectedHarga = '';
-                                // Force update to set harga from loaded ukuran
                                 updateHargaFromSelectedUkuran(ukuranEl, true);
                             }
                         }, 200);
                     } else if (ukuranEl.value.trim()) {
-                        // If no jenis kaca, just update from all suggestions
                         updateKacaSuggestionsFromLogs();
                         setTimeout(() => {
                             if (ukuranEl.value.trim()) {
-                                // Reset tracking again before update to ensure fresh update
-                                lastUkuranValue = '';
-                                lastSelectedHarga = '';
-                                // Force update to set harga from loaded ukuran
                                 updateHargaFromSelectedUkuran(ukuranEl, true);
                             }
                         }, 200);
@@ -11932,30 +11686,54 @@ No. Kendaraan: ${noKendaraan}
                     return aVal.toLowerCase().localeCompare(bVal.toLowerCase());
                 };
 
+                const ukuranValues = Array.from(ukuranMap.values()).sort(sortCI);
+                
+                // Calculate display counts to identify duplicates
+                const displayCounts = {};
+                ukuranValues.forEach(item => {
+                    const display = typeof item === 'string' ? item : item.display;
+                    displayCounts[display] = (displayCounts[display] || 0) + 1;
+                });
+
+                const ukuranList = document.getElementById('datalistUkuran');
+                
                 const buildOptionHTML = (item) => {
+                    let valueText = typeof item === 'string' ? item : item.display;
+                    let hasPriceInValue = false;
+                    
+                    // Append price to value if there are duplicates with same display
+                    if (displayCounts[valueText] > 1 && typeof item !== 'string' && item.harga && item.harga.length > 0) {
+                        const hargaFormatted = item.harga[0].toLocaleString('id-ID');
+                        valueText = `${valueText} (Rp ${hargaFormatted})`;
+                        hasPriceInValue = true;
+                    }
+
                     if (typeof item === 'string') {
-                        return `<option value="${item.replace(/"/g, '&quot;')}"></option>`;
+                        return `<option value="${valueText.replace(/"/g, '&quot;')}"></option>`;
                     } else {
                         let stockInfo = '';
                         
                         if (item.sisa > 0) {
                             if (item.harga && item.harga.length > 0) {
-                                const hargaText = item.harga.length === 1 
-                                    ? `Rp ${item.harga[0].toLocaleString('id-ID')}`
-                                    : item.harga.map(h => `Rp ${h.toLocaleString('id-ID')}`).join(' / ');
-                                stockInfo = `Harga: ${hargaText}, Sisa: ${item.sisa.toLocaleString('id-ID')}`;
+                                // If price is already in value (duplicate case), don't show it in label
+                                if (hasPriceInValue) {
+                                    stockInfo = `Sisa: ${item.sisa.toLocaleString('id-ID')}`;
+                                } else {
+                                    const hargaText = item.harga.length === 1 
+                                        ? `Rp ${item.harga[0].toLocaleString('id-ID')}`
+                                        : item.harga.map(h => `Rp ${h.toLocaleString('id-ID')}`).join(' / ');
+                                    stockInfo = `Harga: ${hargaText}, Sisa: ${item.sisa.toLocaleString('id-ID')}`;
+                                }
                             } else {
                                 stockInfo = `Sisa: ${item.sisa.toLocaleString('id-ID')}`;
                             }
                         }
                         
-                        // Value is ukuran (baris pertama), text content is stockInfo only (baris kedua)
-                        return `<option value="${item.display.replace(/"/g, '&quot;')}" data-stock="${item.sisa}" data-harga="${item.harga ? item.harga.join(',') : ''}">${stockInfo ? stockInfo.replace(/"/g, '&quot;') : item.display.replace(/"/g, '&quot;')}</option>`;
+                        // Value includes price if duplicate, text content is stockInfo only
+                        return `<option value="${valueText.replace(/"/g, '&quot;')}" data-stock="${item.sisa}" data-harga="${item.harga ? item.harga.join(',') : ''}">${stockInfo ? stockInfo.replace(/"/g, '&quot;') : item.display.replace(/"/g, '&quot;')}</option>`;
                     }
                 };
 
-                const ukuranValues = Array.from(ukuranMap.values()).sort(sortCI);
-                const ukuranList = document.getElementById('datalistUkuran');
                 if (ukuranList) {
                     // Always update datalist, but prevent dropdown from showing if value was just selected
                     ukuranList.innerHTML = ukuranValues.map(buildOptionHTML).join('');
@@ -15731,386 +15509,10 @@ No. Kendaraan: ${noKendaraan}
         // Removed generateDefaultKacaRows (not used anymore)
 
         // Fungsi untuk menambah baris baru
-        function addKacaRow() {
-            try {
-                const tbody = document.getElementById('kacaTableBody');
-                if (!tbody) {
-                    console.error('kacaTableBody element not found');
-                    return;
-                }
-                
-                const newRow = document.createElement('tr');
-                const rowId = Date.now() + Math.random();
-                
-                newRow.innerHTML = `
-                    <td>
-                        <input type="text" placeholder="Jenis Kaca" class="jenis-kaca" list="datalistJenisKaca" onchange="calculateTotalLbr(this)" autocomplete="off" autocapitalize="none" spellcheck="false">
-                    </td>
-                    <td class="pwd-input">
-                        <input type="text" placeholder="PWD" class="pwd" maxlength="3">
-                    </td>
-                    <td class="no-do-input">
-                        <input type="text" placeholder="No DO" class="no-do">
-                    </td>
-                    <td>
-                        <input type="text" placeholder="Ukuran" class="ukuran" list="datalistUkuran" onchange="calculateTotalLbr(this)" autocomplete="off" autocapitalize="none" spellcheck="false">
-                    </td>
-                    <td class="harga-input">
-                        <input type="text" placeholder="Harga Jual" class="harga-jual" onchange="calculateTotalLbr(this)" oninput="calculateTotalLbr(this)">
-                    </td>
-                    <td class="box-input">
-                        <input type="text" placeholder="0 BOX" class="box" onchange="calculateTotalLbr(this)" oninput="calculateTotalLbr(this)">
-                    </td>
-                    <td class="lbr-input">
-                        <input type="text" placeholder="0 LBR" class="lbr" onchange="calculateTotalLbr(this)" oninput="calculateTotalLbr(this)">
-                    </td>
-                    <td class="total-lbr">
-                        <input type="text" placeholder="0 LBR" class="total-lbr-input" readonly>
-                    </td>
-                `;
-                
-                tbody.appendChild(newRow);
-
-                // Attach simple inline drop-down behavior to encourage reuse
-                const jenisInput = newRow.querySelector('input.jenis-kaca');
-                const ukuranInput = newRow.querySelector('input.ukuran');
-                if (jenisInput) {
-                    jenisInput.setAttribute('autocomplete', 'off');
-                    jenisInput.setAttribute('autocapitalize', 'none');
-                    jenisInput.setAttribute('spellcheck', 'false');
-                    jenisInput.addEventListener('focus', updateKacaSuggestionsFromLogs, { once: true });
-                    // Update ukuran dropdown when jenis kaca changes
-                    jenisInput.addEventListener('change', function() {
-                        const jenisValue = this.value.trim();
-                        if (ukuranInput) {
-                            updateUkuranByJenisKaca(jenisValue, ukuranInput);
-                        }
-                    });
-                    jenisInput.addEventListener('input', function() {
-                        const jenisValue = this.value.trim();
-                        if (ukuranInput && jenisValue) {
-                            updateUkuranByJenisKaca(jenisValue, ukuranInput);
-                        }
-                    });
-                }
-                if (ukuranInput) {
-                    ukuranInput.setAttribute('autocomplete', 'off');
-                    ukuranInput.setAttribute('autocapitalize', 'none');
-                    ukuranInput.setAttribute('spellcheck', 'false');
-                    // Use a flag to prevent multiple updates in quick succession
-                    let lastUpdateTime = 0;
-                    let isSelectingFromDatalist = false;
-                    let lastUkuranValue = '';
-                    let lastSelectedHarga = '';
-                    const UPDATE_THROTTLE = 500; // milliseconds
-                    
-                    // Debounce utility function for performance optimization
-                    const debounce = (func, wait) => {
-                        let timeout;
-                        return function executedFunction(...args) {
-                            const later = () => {
-                                clearTimeout(timeout);
-                                func.apply(this, args);
-                            };
-                            clearTimeout(timeout);
-                            timeout = setTimeout(later, wait);
-                        };
-                    };
-                    
-                    // Cache DOM elements for better performance
-                    let cachedUkuranList = null;
-                    const getUkuranList = () => {
-                        if (!cachedUkuranList) {
-                            cachedUkuranList = document.getElementById('datalistUkuran');
-                        }
-                        return cachedUkuranList;
-                    };
-                    
-                    // Helper function to update harga from selected ukuran
-                    const updateHargaFromSelectedUkuran = function(inputElement, forceUpdate = false) {
-                        const ukuranValue = inputElement.value.trim();
-                        const currentHarga = inputElement.getAttribute('data-selected-harga') || '';
-                        
-                        // Get current harga from harga-jual input field for better matching
-                        const row = inputElement.closest('tr');
-                        const hargaJualInput = row ? row.querySelector('.harga-jual') : null;
-                        const currentHargaJual = hargaJualInput ? hargaJualInput.value.trim().replace(/[^\d]/g, '') : '';
-                        
-                        // Update if value changed OR if harga might have changed (same ukuran, different harga)
-                        // Also force update if explicitly requested
-                        if (!forceUpdate && ukuranValue === lastUkuranValue && ukuranValue && currentHarga === lastSelectedHarga) {
-                            return;
-                        }
-                        
-                        lastUkuranValue = ukuranValue;
-                        
-                        if (ukuranValue) {
-                            const ukuranList = getUkuranList();
-                            if (ukuranList) {
-                                // Find all matching options (same ukuran might have different harga)
-                                const matchingOptions = Array.from(ukuranList.options).filter(opt => {
-                                    const optValue = opt.value.trim();
-                                    const optDisplay = opt.textContent.trim();
-                                    // Check if ukuranValue matches the base value (before stock info)
-                                    return optValue === ukuranValue || optDisplay.startsWith(ukuranValue);
-                                });
-                                
-                                // If multiple options found, use smart matching
-                                let selectedOption = null;
-                                if (matchingOptions.length > 0) {
-                                    // First try exact match on value
-                                    selectedOption = matchingOptions.find(opt => {
-                                        const optValue = opt.value.trim();
-                                        return optValue === ukuranValue;
-                                    });
-                                    
-                                    // If multiple exact matches (same ukuran, different harga), try to match by harga
-                                    if (!selectedOption || matchingOptions.filter(opt => opt.value.trim() === ukuranValue).length > 1) {
-                                        // Try to match with current harga-jual value if available
-                                        if (currentHargaJual) {
-                                            const matchingByHarga = matchingOptions.find(opt => {
-                                                const optHarga = opt.getAttribute('data-harga');
-                                                if (!optHarga) return false;
-                                                const hargaValues = optHarga.split(',').map(h => h.trim().replace(/[^\d]/g, ''));
-                                                return hargaValues.includes(currentHargaJual);
-                                            });
-                                            if (matchingByHarga) {
-                                                selectedOption = matchingByHarga;
-                                            }
-                                        }
-                                        
-                                        // If still no match, try to match with current data-selected-harga
-                                        if (!selectedOption && currentHarga) {
-                                            const matchingByDataHarga = matchingOptions.find(opt => {
-                                                const optHarga = opt.getAttribute('data-harga');
-                                                return optHarga === currentHarga;
-                                            });
-                                            if (matchingByDataHarga) {
-                                                selectedOption = matchingByDataHarga;
-                                            }
-                                        }
-                                        
-                                        // If still no match, use first exact match or first match
-                                        if (!selectedOption) {
-                                            selectedOption = matchingOptions.find(opt => opt.value.trim() === ukuranValue) || matchingOptions[0];
-                                        }
-                                    }
-                                }
-                                
-                                if (selectedOption) {
-                                    const hargaAttr = selectedOption.getAttribute('data-harga');
-                                    if (hargaAttr) {
-                                        // Always update to ensure harga is current (even if same, to refresh)
-                                        // Save harga to data attribute on the input
-                                        inputElement.setAttribute('data-selected-harga', hargaAttr);
-                                        // Also save to row for easy access
-                                        if (row) {
-                                            row.setAttribute('data-selected-harga', hargaAttr);
-                                        }
-                                        lastSelectedHarga = hargaAttr;
-                                        
-                                        // Also update harga-jual field if it's empty or different
-                                        if (hargaJualInput) {
-                                            const hargaValues = hargaAttr.split(',').map(h => h.trim()).filter(h => h);
-                                            if (hargaValues.length > 0) {
-                                                const firstHarga = parseFloat(hargaValues[0]);
-                                                if (!isNaN(firstHarga) && firstHarga > 0) {
-                                                    const currentHargaValue = parseFloat(hargaJualInput.value.replace(/[^\d]/g, '')) || 0;
-                                                    // Check if harga jual was manually set (e.g., loaded from log or user input)
-                                                    const isManualHarga = hargaJualInput.getAttribute('data-manual-harga') === 'true';
-                                                    // Only update if harga jual field is empty or zero AND not manually set
-                                                    // This ensures that harga jual loaded from log or entered by user is not overwritten
-                                                    if (!isManualHarga && (currentHargaValue === 0 || !hargaJualInput.value.trim())) {
-                                                        hargaJualInput.value = firstHarga.toLocaleString('id-ID');
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    } else {
-                                        // Clear harga if no match found
-                                        if (currentHarga) {
-                                            inputElement.removeAttribute('data-selected-harga');
-                                            if (row) {
-                                                row.removeAttribute('data-selected-harga');
-                                            }
-                                            lastSelectedHarga = '';
-                                        }
-                                    }
-                                } else {
-                                    // Clear harga if no option found
-                                    if (currentHarga) {
-                                        inputElement.removeAttribute('data-selected-harga');
-                                        if (row) {
-                                            row.removeAttribute('data-selected-harga');
-                                        }
-                                        lastSelectedHarga = '';
-                                    }
-                                }
-                            }
-                        } else {
-                            // Clear harga if value is empty
-                            if (currentHarga) {
-                                inputElement.removeAttribute('data-selected-harga');
-                                if (row) {
-                                    row.removeAttribute('data-selected-harga');
-                                }
-                                lastSelectedHarga = '';
-                            }
-                        }
-                    };
-                    
-                    // Debounced update function (300ms delay for input events to reduce excessive calls)
-                    const debouncedUpdateHarga = debounce((input) => {
-                        updateHargaFromSelectedUkuran(input, true);
-                    }, 300);
-                    
-                    // Track when user selects from datalist
-                    ukuranInput.addEventListener('change', function() {
-                        isSelectingFromDatalist = true;
-                        lastUpdateTime = Date.now();
-                        // Force update to ensure harga is refreshed (immediate, no debounce)
-                        updateHargaFromSelectedUkuran(this, true);
-                        
-                        // Reset flag after a delay
-                        setTimeout(() => {
-                            isSelectingFromDatalist = false;
-                        }, 1000);
-                    });
-                    
-                    // Listen to input event with debouncing for better performance
-                    ukuranInput.addEventListener('input', function() {
-                        // Use debounced update to reduce excessive function calls
-                        debouncedUpdateHarga(this);
-                    });
-                    
-                    // Listen to blur event to catch selections that might not trigger change
-                    ukuranInput.addEventListener('blur', function() {
-                        // Immediate update on blur (no debounce needed)
-                        setTimeout(() => {
-                            updateHargaFromSelectedUkuran(this, true);
-                        }, 150);
-                    });
-                    
-                    // Listen to keyup for Enter/Tab key selections
-                    ukuranInput.addEventListener('keyup', function(e) {
-                        if (e.key === 'Enter' || e.key === 'Tab' || e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-                            // Immediate update for keyboard navigation (no debounce)
-                            setTimeout(() => {
-                                updateHargaFromSelectedUkuran(this, true);
-                            }, 100);
-                        }
-                    });
-                    
-                    // Polling removed for better performance - using event-driven approach instead
-                    // This eliminates memory leaks and reduces CPU usage significantly
-                    
-                    // Always update datalist based on jenis kaca from the same row when focused
-                    ukuranInput.addEventListener('focus', function() {
-                        // Reset tracking to force update on focus
-                        lastUkuranValue = '';
-                        lastSelectedHarga = '';
-                        
-                        // Prevent update if user just selected from datalist
-                        if (isSelectingFromDatalist) {
-                            return;
-                        }
-                        
-                        const now = Date.now();
-                        // Prevent update if it was just updated recently (e.g., after selecting from datalist)
-                        if (now - lastUpdateTime < UPDATE_THROTTLE) {
-                            return;
-                        }
-                        lastUpdateTime = now;
-                        
-                        const row = this.closest('tr');
-                        const jenisInput = row ? row.querySelector('input.jenis-kaca') : null;
-                        const jenisValue = jenisInput ? jenisInput.value.trim() : '';
-                        if (jenisValue) {
-                            updateUkuranByJenisKaca(jenisValue, this);
-                        } else {
-                            updateKacaSuggestionsFromLogs();
-                        }
-                        
-                        // Force update harga after updating datalist
-                        setTimeout(() => {
-                            updateHargaFromSelectedUkuran(this, true);
-                        }, 100);
-                    });
-                    // Remove input event listener to prevent dropdown from appearing again after selection
-                }
-                
-                // Update grand total setelah tambah baris
-                setTimeout(() => {
-                    updateGrandTotal();
-                }, 100);
-                
-                // Trigger print data refresh if modal is open
-                const printModal = document.getElementById('printModalOverlay');
-                if (printModal && printModal.style.display === 'flex') {
-                    setTimeout(() => {
-                        if (typeof refreshPrintData === 'function') {
-                            refreshPrintData();
-                        }
-                    }, 100);
-                }
-                
-            } catch (error) {
-                console.error('Error adding glass row:', error);
-            }
-        }
+        
 
         // Fungsi untuk menghapus baris
-        function removeKacaRow() {
-            try {
-                const tbody = document.getElementById('kacaTableBody');
-                if (!tbody) {
-                    console.error('kacaTableBody element not found');
-                    return;
-                }
-                
-                const rows = tbody.querySelectorAll('tr');
-                
-                if (rows.length > 1) {
-                    const rowToRemove = rows[rows.length - 1];
-                    
-                    // Clean up any intervals or event listeners from the row being removed
-                    // This prevents memory leaks
-                    const ukuranInputs = rowToRemove.querySelectorAll('.ukuran');
-                    ukuranInputs.forEach(input => {
-                        // Clear any stored intervals (if polling was used)
-                        if (input._pollingInterval) {
-                            clearInterval(input._pollingInterval);
-                            delete input._pollingInterval;
-                        }
-                        // Clear any debounce timeouts
-                        if (input._debounceTimeout) {
-                            clearTimeout(input._debounceTimeout);
-                            delete input._debounceTimeout;
-                        }
-                    });
-                    
-                    tbody.removeChild(rowToRemove);
-                    // Update grand total setelah hapus baris
-                    setTimeout(() => {
-                        updateGrandTotal();
-                    }, 100);
-                    
-                    // Trigger print data refresh if modal is open
-                    const printModal = document.getElementById('printModalOverlay');
-                    if (printModal && printModal.style.display === 'flex') {
-                        setTimeout(() => {
-                            if (typeof refreshPrintData === 'function') {
-                                refreshPrintData();
-                            }
-                        }, 100);
-                    }
-                } else {
-                    alert('Minimal harus ada 1 baris!');
-                }
-            } catch (error) {
-                console.error('Error removing glass row:', error);
-            }
-        }
+        
 
         // Event listener untuk input changes
         document.addEventListener('input', function(e) {
