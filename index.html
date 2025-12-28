@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -1044,6 +1044,7 @@
             text-align: center;
             border-bottom: 2px solid #dee2e6;
             font-size: 14px;
+            white-space: nowrap; /* Prevent wrapping in headers */
         }
 
         .kaca-table td {
@@ -1051,6 +1052,7 @@
             border-bottom: 1px solid #f0f0f0;
             text-align: center;
             vertical-align: middle;
+            white-space: nowrap; /* Prevent wrapping in data cells */
         }
 
         .kaca-table tbody tr:hover {
@@ -1082,29 +1084,69 @@
             margin: 0;
         }
 
-        /* Tooltip untuk harga beli */
-        .harga-tooltip {
-            position: fixed;
-            background: #333;
-            color: white;
-            padding: 8px 12px;
+
+
+
+        .harga-input-container {
+            display: flex;
+            align-items: center;
+            border: 1px solid #e2e8f0;
             border-radius: 6px;
-            font-size: 12px;
-            z-index: 10000;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-            pointer-events: none;
-            white-space: nowrap;
-            animation: tooltipFadeIn 0.2s ease;
+            overflow: hidden;
+            background-color: #fff;
+            width: 100%;
+            max-width: 160px; /* Batasi lebar container */
+            margin: 0 auto; /* Center alignment */
+        }
+        
+        .harga-input-container input {
+            border: none !important;
+            border-radius: 0 !important;
+            padding: 8px 4px !important; /* Kurangi padding */
+            height: 100%;
+            font-size: 13px;
+            text-align: center; /* Center text input */
         }
 
-        @keyframes tooltipFadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(-5px);
+        .harga-input-container input:focus {
+            box-shadow: none !important;
+            background-color: #fff;
+        }
+
+        .harga-input-container input::placeholder {
+            text-align: center;
+            color: #a0aec0;
+        }
+
+        .harga-input-container input.harga-beli {
+            width: 45%;
+            border-right: 1px solid #e2e8f0 !important;
+            background-color: #f7fafc;
+            color: #4a5568;
+            font-weight: 500;
+        }
+
+        .harga-input-container input.harga-jual {
+            width: 55%;
+            font-weight: normal; /* Hapus bold */
+            color: #2d3748;
+        }
+
+        /* Responsive adjustment for small screens */
+        @media (max-width: 768px) {
+            .harga-input-container {
+                flex-direction: column;
+                border: 1px solid #e2e8f0;
             }
-            to {
-                opacity: 1;
-                transform: translateY(0);
+            .harga-input-container input.harga-beli {
+                width: 100%;
+                border-right: none !important;
+                border-bottom: 1px solid #e2e8f0 !important;
+                padding: 4px 6px !important;
+                font-size: 11px;
+            }
+            .harga-input-container input.harga-jual {
+                width: 100%;
             }
         }
 
@@ -3637,57 +3679,7 @@
       }
     }
 
-    /* Tooltip for Harga Jual */
-    .price-tooltip {
-        position: absolute;
-        background: #2d3748;
-        color: #fff;
-        padding: 8px 12px;
-        border-radius: 6px;
-        font-size: 13px;
-        z-index: 9999;
-        pointer-events: none;
-        opacity: 0;
-        transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        white-space: pre-line;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        line-height: 1.4;
-        text-align: left;
-        min-width: 100px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        transform: translateY(4px);
-    }
 
-    .price-tooltip.show {
-        opacity: 1;
-        transform: translateY(0);
-    }
-
-    .price-tooltip .tooltip-label {
-        font-size: 11px;
-        color: #a0aec0;
-        margin-bottom: 2px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .price-tooltip .tooltip-value {
-        font-weight: 600;
-        font-size: 14px;
-        color: #fff;
-    }
-
-    .price-tooltip .tooltip-suggestion {
-        color: #63b3ed;
-    }
-
-    @media (max-width: 768px) {
-        .price-tooltip {
-            font-size: 12px;
-            padding: 6px 10px;
-        }
-    }
   </style>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -4370,13 +4362,13 @@
                     <table class="kaca-table" id="kacaTable">
                         <thead>
                             <tr>
-                                <th>JENIS KACA</th>
+                                <th style="min-width: 250px;">JENIS KACA</th>
                                 <th>PWD</th>
-                                <th>NO DO</th>
-                                <th>UKURAN</th>
-                                <th>HARGA</th>
-                                <th>BOX</th>
-                                <th>LBR</th>
+                                <th style="width: 130px;">NO DO</th>
+                                <th style="min-width: 220px;">UKURAN</th>
+                                <th style="width: 170px;">HARGA</th>
+                                <th style="width: 130px;">BOX</th>
+                                <th style="width: 130px;">LBR</th>
                                 <th>TOTAL LBR</th>
                             </tr>
                         </thead>
@@ -6293,7 +6285,37 @@ No. Kendaraan: ${noKendaraan}
                                 console.log(`[Price Update] Set explicit lock: Size=${cleanValue}, Price=${hargaAttr}`);
                             }
                             
-                            // Also update harga-jual field if it's empty or different
+                            // Also update harga-beli field with formatted value
+                            const hargaBeliInput = row ? row.querySelector('.harga-beli') : null;
+                            if (hargaBeliInput) {
+                                // Check if harga beli is manually set (e.g. loaded from log)
+                                // If so, do not overwrite it unless explicit permission given (which we don't really use for load)
+                                // But here we want to respect the flag we set in loadKacaDataFromLog
+                                if (hargaBeliInput.hasAttribute('data-manual-harga-beli')) {
+                                    console.log('[Price Update] Skipping harga-beli update due to manual protection flag');
+                                } else {
+                                    const hargaValues = hargaAttr.split(',').map(h => h.trim()).filter(h => h);
+                                    if (hargaValues.length > 0) {
+                                        const firstHarga = parseFloat(hargaValues[0]);
+                                        if (!isNaN(firstHarga) && firstHarga > 0) {
+                                            // Update harga beli field (read-only)
+                                            const formattedPrice = firstHarga.toLocaleString('id-ID');
+                                            if (hargaBeliInput.value !== formattedPrice) {
+                                                const oldPrice = hargaBeliInput.value;
+                                                hargaBeliInput.value = formattedPrice;
+                                                console.log(`[Price Update] Updated harga-beli to: ${formattedPrice}`);
+                                                
+                                                // Log price change
+                                                if (typeof logPriceChange === 'function') {
+                                                    logPriceChange(oldPrice, formattedPrice, 'system_update', cleanValue);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            // Also update harga-jual field placeholder
                             if (hargaJualInput) {
                                 const hargaValues = hargaAttr.split(',').map(h => h.trim()).filter(h => h);
                                 if (hargaValues.length > 0) {
@@ -6302,8 +6324,14 @@ No. Kendaraan: ${noKendaraan}
                                         // Always update placeholder to reflect current selection
                                         const newPlaceholder = `Rp ${firstHarga.toLocaleString('id-ID')}`;
                                         if (hargaJualInput.placeholder !== newPlaceholder) {
-                                            hargaJualInput.placeholder = newPlaceholder;
-                                            console.log(`[Price Update] Updated placeholder to: ${newPlaceholder}`);
+                                            // Optional: Don't change placeholder of jual, keep it static "Jual" or suggestive?
+                                            // User request: "Beri placeholder yang jelas (contoh: 'Harga Jual')"
+                                            // So we should probably keep it static or suggestive.
+                                            // Let's stick to user request "Harga Jual" (or just "Jual" as I put in HTML)
+                                            // But maybe suggestive placeholder is better?
+                                            // User said: "Beri placeholder yang jelas (contoh: "Harga Jual")"
+                                            // So I will NOT override it with price.
+                                            // hargaJualInput.placeholder = newPlaceholder; 
                                         }
                                     }
                                 }
@@ -6349,7 +6377,10 @@ No. Kendaraan: ${noKendaraan}
                         <input type="text" placeholder="Ukuran" class="ukuran" list="datalistUkuran" onchange="calculateTotalLbr(this)" autocomplete="off" autocapitalize="none" spellcheck="false">
                     </td>
                     <td class="harga-input">
-                        <input type="text" placeholder="Harga Jual" class="harga-jual" onchange="calculateTotalLbr(this)" oninput="calculateTotalLbr(this)">
+                        <div class="harga-input-container">
+                            <input type="text" placeholder="Beli" class="harga-beli" readonly tabindex="-1">
+                            <input type="text" placeholder="Jual" class="harga-jual" onchange="calculateTotalLbr(this)" oninput="calculateTotalLbr(this)">
+                        </div>
                     </td>
                     <td class="box-input">
                         <input type="text" placeholder="0 BOX" class="box" onchange="calculateTotalLbr(this)" oninput="calculateTotalLbr(this)">
@@ -6381,7 +6412,7 @@ No. Kendaraan: ${noKendaraan}
                     });
                     jenisInput.addEventListener('input', function() {
                         const jenisValue = this.value.trim();
-                        if (ukuranInput && jenisValue) {
+                        if (ukuranInput) {
                             updateUkuranByJenisKaca(jenisValue, ukuranInput);
                         }
                     });
@@ -7698,6 +7729,8 @@ No. Kendaraan: ${noKendaraan}
             pwd: 8,
             noDo: 12,
             ukuran: 12,
+            hargaBeli: 15, // Added default width for Harga Beli
+            hargaJual: 15, // Added default width for Harga Jual
             box: 10,
             lbr: 10,
             totalLbr: 12
@@ -8830,10 +8863,9 @@ No. Kendaraan: ${noKendaraan}
             inputs.forEach(id => {
                 const input = document.getElementById(id);
                 if (input) {
-                    const columnName = id.replace('col', '').toLowerCase();
-                    if (columnName === 'jeniskaca') columnName = 'jenisKaca';
-                    if (columnName === 'nodo') columnName = 'noDo';
-                    if (columnName === 'totallbr') columnName = 'totalLbr';
+                    let columnName = id.replace('col', '');
+                    // Fix camelCase conversion
+                    columnName = columnName.charAt(0).toLowerCase() + columnName.slice(1);
                     
                     input.value = columnSpacingConfig[columnName] || 12;
                 }
@@ -9008,11 +9040,23 @@ No. Kendaraan: ${noKendaraan}
             
             kacaRows.forEach((row, index) => {
                 const jenisKaca = row.querySelector('.jenis-kaca')?.value || '';
-                const pwd = row.querySelector('.pwd')?.value || '';
+                // Ensure PWD is uppercase for print (Validation as requested)
+                const pwdRaw = row.querySelector('.pwd')?.value || '';
+                const pwd = pwdRaw.toUpperCase();
                 const noDo = row.querySelector('.no-do')?.value || '';
                 const ukuran = row.querySelector('.ukuran')?.value || '';
-                const box = row.querySelector('.box')?.value || '';
-                const lbr = row.querySelector('.lbr')?.value || '';
+                let box = row.querySelector('.box')?.value || '';
+                let lbr = row.querySelector('.lbr')?.value || '';
+                
+                // Format BOX (e.g. "100" -> "100 BOX")
+                if (box && box.trim() && /^\d+(\.\d+)?$/.test(box.trim())) {
+                    box = box.trim() + ' BOX';
+                }
+
+                // Format LBR (e.g. "100" -> "100 LBR")
+                if (lbr && lbr.trim() && /^\d+(\.\d+)?$/.test(lbr.trim())) {
+                    lbr = lbr.trim() + ' LBR';
+                }
                 
                 // Try multiple selectors for TOTAL LBR
                 let totalLbr = row.querySelector('input.total-lbr-input')?.value || '';
@@ -9048,8 +9092,12 @@ No. Kendaraan: ${noKendaraan}
                     }
                 }
                 
+                // Get harga jual & beli for print
+                const hargaBeli = row.querySelector('.harga-beli')?.value?.trim() || '';
+                const hargaJual = row.querySelector('.harga-jual')?.value?.trim() || '';
+
                 // Only add rows that have actual data
-                const hasData = jenisKaca.trim() || pwd.trim() || noDo.trim() || ukuran.trim() || box.trim() || lbr.trim() || totalLbr.trim();
+                const hasData = jenisKaca.trim() || pwd.trim() || noDo.trim() || ukuran.trim() || box.trim() || lbr.trim() || totalLbr.trim() || hargaBeli.trim() || hargaJual.trim();
                 
                 if (hasData) {
                     const formattedRow = 
@@ -9058,6 +9106,8 @@ No. Kendaraan: ${noKendaraan}
                         noDo.padEnd(columnSpacingConfig.noDo) +
                         // Center align ukuran column
                         centerPad(ukuran, columnSpacingConfig.ukuran) +
+                        // Add harga Beli column - REMOVED FROM PRINT as per user request
+                        // hargaBeli.padStart(columnSpacingConfig.hargaBeli || 15) +
                         // Right-align numeric columns for better visual alignment
                         box.padStart(columnSpacingConfig.box) +
                         lbr.padStart(columnSpacingConfig.lbr) +
@@ -9403,8 +9453,18 @@ No. Kendaraan: ${noKendaraan}
             }
             
             // Get kaca data
-            const kacaData = getKacaDataForLog();
+            const kacaDataObj = getKacaDataForLog();
+            const kacaRows = kacaDataObj.rows || [];
             
+            // Validation: Ensure Harga Beli is present for all items
+            // This prevents accidental data loss for Harga Beli
+            const missingHargaBeli = kacaRows.some(row => !row.hargaBeli || row.hargaBeli.trim() === '');
+            if (missingHargaBeli) {
+                if (!confirm('Peringatan: Beberapa item tidak memiliki Harga Beli.\n\nApakah Anda yakin ingin menyimpan tanpa Harga Beli?\nKlik OK untuk lanjut, Cancel untuk perbaiki.')) {
+                    return;
+                }
+            }
+
             // Create log entry
             const logEntry = {
                 id: Date.now(),
@@ -9417,7 +9477,7 @@ No. Kendaraan: ${noKendaraan}
                     nomorSJ,
                     supir,
                     noKendaraan,
-                    kacaData
+                    kacaData: kacaDataObj
                 }
             };
             
@@ -9449,6 +9509,18 @@ No. Kendaraan: ${noKendaraan}
             
             // Save to localStorage
             saveInputLogToStorage();
+            
+            // Explicit Backup Mechanism for Harga Beli protection
+            try {
+                const backupData = {
+                    timestamp: new Date().toISOString(),
+                    lastEntry: logEntry
+                };
+                localStorage.setItem('stok_backup_latest_entry', JSON.stringify(backupData));
+            } catch (e) {
+                console.error('Backup failed:', e);
+            }
+            
             // Update lastNomorSJ AFTER successful save/print
             try { storageManager.save('lastNomorSJ', nomorSJ); } catch (_) {}
             lastNomorSJ = nomorSJ;
@@ -9574,7 +9646,8 @@ No. Kendaraan: ${noKendaraan}
                     }
                 }
                 
-                // Get harga jual
+                // Get harga jual & beli
+                const hargaBeli = row.querySelector('.harga-beli')?.value?.trim() || '';
                 const hargaJual = row.querySelector('.harga-jual')?.value?.trim() || '';
                 
                 // Only add rows that have actual data
@@ -9586,6 +9659,7 @@ No. Kendaraan: ${noKendaraan}
                         pwd: pwd.trim(),
                         noDo: noDo.trim(),
                         ukuran: ukuran.trim(),
+                        hargaBeli: hargaBeli.trim(),
                         hargaJual: hargaJual.trim(),
                         box: box.trim(),
                         lbr: lbr.trim(),
@@ -10060,7 +10134,10 @@ No. Kendaraan: ${noKendaraan}
                         <input type="text" placeholder="Ukuran" class="ukuran" onchange="calculateTotalLbr(this)" list="datalistUkuran" autocomplete="off" autocapitalize="none" spellcheck="false">
                     </td>
                     <td class="harga-input">
-                        <input type="text" placeholder="Harga Jual" class="harga-jual" onchange="calculateTotalLbr(this)" oninput="calculateTotalLbr(this)">
+                        <div class="harga-input-container">
+                            <input type="text" placeholder="Beli" class="harga-beli" readonly tabindex="-1">
+                            <input type="text" placeholder="Jual" class="harga-jual" onchange="calculateTotalLbr(this)" oninput="calculateTotalLbr(this)">
+                        </div>
                     </td>
                     <td class="box-input">
                         <input type="text" placeholder="0 BOX" class="box" onchange="calculateTotalLbr(this)" oninput="calculateTotalLbr(this)">
@@ -10078,8 +10155,16 @@ No. Kendaraan: ${noKendaraan}
                 const pwdEl = newRow.querySelector('.pwd');
                 const noDoEl = newRow.querySelector('.no-do');
                 const ukuranEl = newRow.querySelector('.ukuran');
+                const hargaBeliEl = newRow.querySelector('.harga-beli');
                 const hargaEl = newRow.querySelector('.harga-jual');
                 const boxEl = newRow.querySelector('.box');
+                if (hargaBeliEl) {
+                    hargaBeliEl.value = rowData.hargaBeli || '';
+                    if (rowData.hargaBeli) {
+                        hargaBeliEl.setAttribute('data-manual-harga-beli', 'true');
+                        hargaBeliEl.setAttribute('data-original-value', rowData.hargaBeli);
+                    }
+                }
                 const lbrEl = newRow.querySelector('.lbr');
                 const totalEl = newRow.querySelector('.total-lbr-input');
                 if (jenisEl) jenisEl.value = rowData.jenisKaca || '';
@@ -10181,6 +10266,14 @@ No. Kendaraan: ${noKendaraan}
                     
                     // Listen to input event with debouncing
                     ukuranEl.addEventListener('input', function() {
+                        // Clear manual price protection when user changes size
+                        const row = this.closest('tr');
+                        const hargaBeliInput = row ? row.querySelector('.harga-beli') : null;
+                        if (hargaBeliInput && hargaBeliInput.hasAttribute('data-manual-harga-beli')) {
+                            hargaBeliInput.removeAttribute('data-manual-harga-beli');
+                            console.log('[Price Update] Manual protection removed due to size change');
+                        }
+                        
                         debouncedUpdateHarga(this);
                     });
                     
@@ -11532,13 +11625,11 @@ No. Kendaraan: ${noKendaraan}
                     return aVal.toLowerCase().localeCompare(bVal.toLowerCase());
                 };
                 
-                // Build option HTML with stock info
-                const buildOptionHTML = (item) => {
+                // Build option HTML for Jenis Kaca (Original logic)
+                const buildJenisOptionHTML = (item) => {
                     if (typeof item === 'string') {
-                        // Fallback from log history (no stock info)
                         return `<option value="${item.replace(/"/g, '&quot;')}"></option>`;
                     } else {
-                        // From stokData (with stock info)
                         let stockInfo = '';
                         
                         if (item.sisa > 0) {
@@ -11552,8 +11643,30 @@ No. Kendaraan: ${noKendaraan}
                             }
                         }
                         
-                        // Value is jenis kaca (baris pertama), text content is stockInfo only (baris kedua)
                         return `<option value="${item.display.replace(/"/g, '&quot;')}" data-stock="${item.sisa}" data-harga="${item.harga ? item.harga.join(',') : ''}">${stockInfo ? stockInfo.replace(/"/g, '&quot;') : item.display.replace(/"/g, '&quot;')}</option>`;
+                    }
+                };
+
+                // Build option HTML for Ukuran (New logic per user request)
+                const buildUkuranOptionHTML = (item) => {
+                    if (typeof item === 'string') {
+                        return `<option value="${item.replace(/"/g, '&quot;')}"></option>`;
+                    } else {
+                        let valueText = item.display;
+                        
+                        // Always append price to value
+                        if (item.harga && item.harga.length > 0) {
+                             const hargaFormatted = item.harga[0].toLocaleString('id-ID');
+                             valueText = `${valueText} (Rp ${hargaFormatted})`;
+                        }
+
+                        let stockInfo = '';
+                        // Only show stock info in label
+                        if (item.sisa > 0) {
+                            stockInfo = `Sisa: ${item.sisa.toLocaleString('id-ID')}`;
+                        }
+                        
+                        return `<option value="${valueText.replace(/"/g, '&quot;')}" data-stock="${item.sisa}" data-harga="${item.harga ? item.harga.join(',') : ''}">${stockInfo ? stockInfo.replace(/"/g, '&quot;') : item.display.replace(/"/g, '&quot;')}</option>`;
                     }
                 };
                 
@@ -11562,8 +11675,8 @@ No. Kendaraan: ${noKendaraan}
 
                 const jenisList = document.getElementById('datalistJenisKaca');
                 const ukuranList = document.getElementById('datalistUkuran');
-                if (jenisList) jenisList.innerHTML = jenisValues.map(buildOptionHTML).join('');
-                if (ukuranList) ukuranList.innerHTML = ukuranValues.map(buildOptionHTML).join('');
+                if (jenisList) jenisList.innerHTML = jenisValues.map(buildJenisOptionHTML).join('');
+                if (ukuranList) ukuranList.innerHTML = ukuranValues.map(buildUkuranOptionHTML).join('');
             } catch (e) {
                 console.warn('Failed updating kaca suggestions:', e);
             }
@@ -11620,7 +11733,110 @@ No. Kendaraan: ${noKendaraan}
             }
         }
 
+        // Helper function to group stock data
+        // Used by: updateUkuranByJenisKaca, getHargaBeliListWithStock, updateTotalSisa, exportStock
+        function groupStokData(dataArray, filterFn = null) {
+            const groupedData = {};
+            
+            if (!Array.isArray(dataArray)) return groupedData;
+
+            dataArray.forEach((entry) => {
+                // Apply filter if provided
+                if (filterFn && !filterFn(entry)) return;
+                
+                // Skip invalid entries
+                if (!entry.tebal || !entry.ukuran) return;
+
+                const hargaKey = entry.harga !== undefined && entry.harga > 0 ? entry.harga : 'noharga';
+                const key = `${entry.tebal}-${entry.ukuran}-${hargaKey}`;
+
+                if (!groupedData[key]) {
+                    groupedData[key] = { 
+                        tebal: entry.tebal, 
+                        ukuran: entry.ukuran, 
+                        hargaMasuk: hargaKey !== 'noharga' ? entry.harga : undefined,
+                        totalMasuk: 0, 
+                        totalKeluar: 0, 
+                        totalSisa: 0 
+                    };
+                }
+
+                // Logic penentuan hargaMasuk
+                if (entry.harga !== undefined && entry.harga > 0) {
+                    if (groupedData[key].hargaMasuk === undefined) {
+                        groupedData[key].hargaMasuk = entry.harga;
+                    } else if (entry.masuk > 0) {
+                        // Prioritaskan harga dari transaksi masuk
+                        groupedData[key].hargaMasuk = entry.harga;
+                    }
+                }
+
+                groupedData[key].totalMasuk += (entry.masuk || 0);
+                groupedData[key].totalKeluar += (entry.keluar || 0);
+                groupedData[key].totalSisa = groupedData[key].totalMasuk - groupedData[key].totalKeluar;
+            });
+            
+            return groupedData;
+        }
+
+        // Helper to sort grouped data by Tebal then Ukuran
+        function sortGroupedData(groupedData) {
+            return Object.keys(groupedData).map(key => ({
+                key: key,
+                data: groupedData[key]
+            })).sort((a, b) => {
+                // Sort by jenis kaca (tebal) A-Z
+                const tebalA = (a.data.tebal || '').toUpperCase();
+                const tebalB = (b.data.tebal || '').toUpperCase();
+                if (tebalA !== tebalB) {
+                    return tebalA.localeCompare(tebalB);
+                }
+                // If jenis kaca is the same, sort by ukuran A-Z
+                const ukuranA = (a.data.ukuran || '').toUpperCase();
+                const ukuranB = (b.data.ukuran || '').toUpperCase();
+                return ukuranA.localeCompare(ukuranB);
+            });
+        }
+
         // Function to update ukuran dropdown based on selected jenis kaca
+        // Fungsi untuk log perubahan harga
+        function logPriceChange(oldPrice, newPrice, source, context) {
+            try {
+                if (!oldPrice && !newPrice) return;
+                
+                const logEntry = {
+                    timestamp: new Date().toISOString(),
+                    oldPrice: oldPrice || '0',
+                    newPrice: newPrice || '0',
+                    source: source,
+                    context: context
+                };
+                
+                // Save to window global for session history
+                if (!window.priceChangeHistory) {
+                    window.priceChangeHistory = [];
+                }
+                window.priceChangeHistory.push(logEntry);
+                
+                // Optional: Persist to localStorage for audit trail
+                // We keep last 50 changes
+                try {
+                    const storedLogs = JSON.parse(localStorage.getItem('stok_price_audit_log') || '[]');
+                    storedLogs.push(logEntry);
+                    if (storedLogs.length > 50) {
+                        storedLogs.shift();
+                    }
+                    localStorage.setItem('stok_price_audit_log', JSON.stringify(storedLogs));
+                } catch (e) {
+                    console.warn('Failed to save price audit log:', e);
+                }
+                
+                console.log('📝 Price Change Logged:', logEntry);
+            } catch (e) {
+                console.error('Error logging price change:', e);
+            }
+        }
+
         function updateUkuranByJenisKaca(jenisKaca, ukuranInput) {
             try {
                 if (!jenisKaca || !jenisKaca.trim()) {
@@ -11647,41 +11863,8 @@ No. Kendaraan: ${noKendaraan}
 
                 if (stokDataArray.length > 0) {
                     // Group data by Tebal Kaca, Ukuran Kaca, dan Harga Beli
-                    const groupedData = {};
-                    
-                    stokDataArray.forEach((entry) => {
-                        if (!entry.tebal || !entry.ukuran) return;
-                        
-                        // Filter by jenis kaca
-                        const entryJenisNorm = normalize(entry.tebal);
-                        if (entryJenisNorm !== jenisKacaNorm) return;
-                        
-                        const hargaKey = entry.harga !== undefined && entry.harga > 0 ? entry.harga : 'noharga';
-                        const key = `${entry.tebal}-${entry.ukuran}-${hargaKey}`;
-
-                        if (!groupedData[key]) {
-                            groupedData[key] = { 
-                                tebal: entry.tebal, 
-                                ukuran: entry.ukuran, 
-                                hargaMasuk: hargaKey !== 'noharga' ? entry.harga : undefined,
-                                totalMasuk: 0, 
-                                totalKeluar: 0, 
-                                totalSisa: 0 
-                            };
-                        }
-
-                        if (
-                            groupedData[key].hargaMasuk === undefined &&
-                            entry.masuk > 0 &&
-                            entry.harga !== undefined &&
-                            entry.harga > 0
-                        ) {
-                            groupedData[key].hargaMasuk = entry.harga;
-                        }
-
-                        groupedData[key].totalMasuk += entry.masuk;
-                        groupedData[key].totalKeluar += entry.keluar;
-                        groupedData[key].totalSisa = groupedData[key].totalMasuk - groupedData[key].totalKeluar;
+                    const groupedData = groupStokData(stokDataArray, (entry) => {
+                        return normalize(entry.tebal) === jenisKacaNorm;
                     });
 
                     // Process grouped data to build ukuran suggestions (only items with stock > 0)
@@ -11751,13 +11934,11 @@ No. Kendaraan: ${noKendaraan}
                 
                 const buildOptionHTML = (item) => {
                     let valueText = typeof item === 'string' ? item : item.display;
-                    let hasPriceInValue = false;
                     
-                    // Append price to value if there are duplicates with same display
-                    if (displayCounts[valueText] > 1 && typeof item !== 'string' && item.harga && item.harga.length > 0) {
+                    // Always append price to value if it exists (User request: "Baris 1: Ukuran produk ... dan harga dalam format (Rp ...)")
+                    if (typeof item !== 'string' && item.harga && item.harga.length > 0) {
                         const hargaFormatted = item.harga[0].toLocaleString('id-ID');
                         valueText = `${valueText} (Rp ${hargaFormatted})`;
-                        hasPriceInValue = true;
                     }
 
                     if (typeof item === 'string') {
@@ -11765,23 +11946,12 @@ No. Kendaraan: ${noKendaraan}
                     } else {
                         let stockInfo = '';
                         
+                        // Only show stock info in the second line (User request: "Baris 2: Informasi stok tersedia (Sisa: ...)")
+                        // User request: "Hilangkan tampilan harga yang muncul terpisah di baris kedua."
                         if (item.sisa > 0) {
-                            if (item.harga && item.harga.length > 0) {
-                                // If price is already in value (duplicate case), don't show it in label
-                                if (hasPriceInValue) {
-                                    stockInfo = `Sisa: ${item.sisa.toLocaleString('id-ID')}`;
-                                } else {
-                                    const hargaText = item.harga.length === 1 
-                                        ? `Rp ${item.harga[0].toLocaleString('id-ID')}`
-                                        : item.harga.map(h => `Rp ${h.toLocaleString('id-ID')}`).join(' / ');
-                                    stockInfo = `Harga: ${hargaText}, Sisa: ${item.sisa.toLocaleString('id-ID')}`;
-                                }
-                            } else {
-                                stockInfo = `Sisa: ${item.sisa.toLocaleString('id-ID')}`;
-                            }
+                            stockInfo = `Sisa: ${item.sisa.toLocaleString('id-ID')}`;
                         }
                         
-                        // Value includes price if duplicate, text content is stockInfo only
                         return `<option value="${valueText.replace(/"/g, '&quot;')}" data-stock="${item.sisa}" data-harga="${item.harga ? item.harga.join(',') : ''}">${stockInfo ? stockInfo.replace(/"/g, '&quot;') : item.display.replace(/"/g, '&quot;')}</option>`;
                     }
                 };
@@ -12500,6 +12670,7 @@ No. Kendaraan: ${noKendaraan}
                             if (saved) {
                                 inputLogHistory = saved;
                                 if (typeof renderInputLog === 'function') renderInputLog();
+                                if (typeof updateKacaSuggestionsFromLogs === 'function') updateKacaSuggestionsFromLogs();
                                 if (typeof updateSupirDanKendaraanSuggestions === 'function') updateSupirDanKendaraanSuggestions();
                             }
                         } catch (e) {
@@ -12591,6 +12762,10 @@ No. Kendaraan: ${noKendaraan}
                     async function readLogRecordBytes() {
                         // Read IDB record and estimate bytes via Blob of JSON
                         try {
+                            if (window.indexedDB && window.indexedDB.databases) {
+                                const dbs = await window.indexedDB.databases();
+                                if (!dbs.some(db => db.name === 'sj-logs-db')) return undefined;
+                            }
                             const open = (name, ver=1) => new Promise((res, rej) => {
                                 const req = indexedDB.open(name, ver);
                                 req.onsuccess = () => res(req.result);
@@ -12611,6 +12786,33 @@ No. Kendaraan: ${noKendaraan}
                         }
                     }
 
+                    async function readStockDataBytes() {
+                        try {
+                            if (window.indexedDB && window.indexedDB.databases) {
+                                const dbs = await window.indexedDB.databases();
+                                if (!dbs.some(db => db.name === 'StokKacaDB')) return undefined;
+                            }
+                            const open = (name, ver=1) => new Promise((res, rej) => {
+                                const req = indexedDB.open(name, ver);
+                                req.onsuccess = () => res(req.result);
+                                req.onerror = () => rej(req.error);
+                            });
+                            // DB_NAME = 'StokKacaDB', DB_VERSION = 1
+                            const db = await open('StokKacaDB', 1);
+                            const value = await new Promise((res, rej) => {
+                                const tx = db.transaction('stokData', 'readonly');
+                                const req = tx.objectStore('stokData').getAll();
+                                req.onsuccess = () => res(req.result);
+                                req.onerror = () => rej(req.error);
+                            });
+                            db.close();
+                            const json = JSON.stringify(value || []);
+                            return new Blob([json]).size;
+                        } catch (_) {
+                            return undefined;
+                        }
+                    }
+
                     async function measureAndRender() {
                         const badge = ensureBadgeEl();
                         try {
@@ -12618,15 +12820,24 @@ No. Kendaraan: ${noKendaraan}
                             const usage = est && typeof est.usage === 'number' ? est.usage : undefined;
                             const quota = est && typeof est.quota === 'number' ? est.quota : undefined;
                             const logBytes = await readLogRecordBytes();
+                            const stockBytes = await readStockDataBytes();
                             
                             const parts = [];
                             if (usage !== undefined) parts.push('Used ' + formatBytes(usage));
+                            
+                            const details = [];
+                            if (logBytes !== undefined) details.push('Log SJ: ' + formatBytes(logBytes));
+                            if (stockBytes !== undefined) details.push('Riwayat Stock: ' + formatBytes(stockBytes));
+                            
+                            if (details.length > 0) {
+                                parts.push('(' + details.join(', ') + ')');
+                            }
+
                             if (quota !== undefined) {
                                 const remaining = quota - (usage || 0);
                                 const remainingPercent = quota > 0 ? Math.round(((quota - (usage || 0)) / quota) * 100) : 0;
                                 parts.push('of ' + formatBytes(quota) + ' (' + remainingPercent + '% free)');
                             }
-                            if (logBytes !== undefined) parts.push('(Log ' + formatBytes(logBytes) + ')');
                             
                             // Add color coding based on remaining space
                             if (quota && usage !== undefined) {
@@ -12648,6 +12859,7 @@ No. Kendaraan: ${noKendaraan}
                             
                             badge.textContent = parts.length ? parts.join(' ') : 'Storage: N/A';
                         } catch (e) {
+                            console.error('Storage measure error:', e);
                             const badgeEl = ensureBadgeEl();
                             badgeEl.textContent = 'Storage: N/A';
                             badgeEl.style.background = '#f8f9fa';
@@ -12675,117 +12887,7 @@ No. Kendaraan: ${noKendaraan}
                     // No-op if anything fails; UI remains unaffected
                 }
             })();
-    // Tooltip functionality for Harga Jual
-    const priceTooltip = document.createElement('div');
-    priceTooltip.className = 'price-tooltip';
-    document.body.appendChild(priceTooltip);
 
-    let tooltipShowTimer = null;
-    let tooltipHideTimer = null;
-
-    function showTooltip(target) {
-        // Only show if value exists
-        if (!target.value.trim()) return;
-
-        const rect = target.getBoundingClientRect();
-        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-        const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
-        
-        // Format value
-        let content = '';
-        const value = target.value.trim();
-        const cleanValue = value.replace(/[^\d]/g, '');
-        const numValue = parseFloat(cleanValue);
-        
-        if (!isNaN(numValue) && numValue > 0) {
-            const formattedValue = `Rp ${numValue.toLocaleString('id-ID')}`;
-            
-            // Check for suggested price in placeholder
-            const placeholder = target.getAttribute('placeholder') || '';
-            // Only consider placeholder as suggestion if it contains "Rp" and is not the default "Harga Jual"
-            const suggestedPrice = placeholder.includes('Rp') ? placeholder : '';
-            
-            content = `<div class="tooltip-label">Harga Jual:</div><div class="tooltip-value">${formattedValue}</div>`;
-            
-            // Show suggestion if it differs from current value
-            // We compare formatted strings to be safe
-            if (suggestedPrice && suggestedPrice !== formattedValue && suggestedPrice !== 'Harga Jual') {
-                content += `<div class="tooltip-label" style="margin-top:4px;">Harga Beli:</div><div class="tooltip-suggestion">${suggestedPrice}</div>`;
-            }
-        } else {
-            content = `<div class="tooltip-value">${value}</div>`;
-        }
-        
-        priceTooltip.innerHTML = content;
-        
-        // Position tooltip above input
-        priceTooltip.style.top = `${rect.top + scrollTop - priceTooltip.offsetHeight - 8}px`;
-        priceTooltip.style.left = `${rect.left + scrollLeft}px`;
-        
-        priceTooltip.classList.add('show');
-    }
-
-    function hideTooltip() {
-        priceTooltip.classList.remove('show');
-    }
-
-    // Event delegation for tooltip
-    document.addEventListener('mouseover', function(e) {
-        if (e.target.classList && e.target.classList.contains('harga-jual')) {
-            clearTimeout(tooltipHideTimer);
-            clearTimeout(tooltipShowTimer);
-            tooltipShowTimer = setTimeout(() => {
-                showTooltip(e.target);
-            }, 300);
-        }
-    });
-
-    document.addEventListener('mouseout', function(e) {
-        if (e.target.classList && e.target.classList.contains('harga-jual')) {
-            clearTimeout(tooltipShowTimer);
-            tooltipHideTimer = setTimeout(() => {
-                hideTooltip();
-            }, 1000);
-        }
-    });
-
-    // Use capture phase for focus/blur to handle delegation correctly
-    document.addEventListener('focus', function(e) {
-        if (e.target.classList && e.target.classList.contains('harga-jual')) {
-            clearTimeout(tooltipHideTimer);
-            clearTimeout(tooltipShowTimer);
-            tooltipShowTimer = setTimeout(() => {
-                showTooltip(e.target);
-            }, 300);
-        }
-    }, true);
-
-    document.addEventListener('blur', function(e) {
-        if (e.target.classList && e.target.classList.contains('harga-jual')) {
-            clearTimeout(tooltipShowTimer);
-            tooltipHideTimer = setTimeout(() => {
-                hideTooltip();
-            }, 1000);
-        }
-    }, true);
-
-    document.addEventListener('input', function(e) {
-        if (e.target.classList && e.target.classList.contains('harga-jual')) {
-            if (priceTooltip.classList.contains('show')) {
-                // If tooltip is visible, update it immediately to reflect typing
-                showTooltip(e.target);
-            } else if (e.target.value.trim()) {
-                // If user starts typing and value exists, start timer to show
-                clearTimeout(tooltipShowTimer);
-                tooltipShowTimer = setTimeout(() => {
-                    showTooltip(e.target);
-                }, 300);
-            } else {
-                // If value cleared, hide
-                hideTooltip();
-            }
-        }
-    });
 
     </script>
 
@@ -12853,7 +12955,7 @@ No. Kendaraan: ${noKendaraan}
         <input type="text" id="ukuran" placeholder="Ukuran Kaca : [60X48] [3660X2440]" required list="ukuranKacaList">
         <datalist id="ukuranKacaList"></datalist>
         <input type="number" id="harga" placeholder="Harga Beli" min="0" step="0.01" class="field-pembelian">
-        <input type="number" id="hargaJual" placeholder="Harga Jual" min="0" step="0.01" class="field-penjualan" style="display: none;" disabled>
+        <input type="number" id="hargaJual" placeholder="Jual" min="0" step="0.01" class="field-penjualan" style="display: none;" disabled>
         <input type="number" id="masuk" placeholder="Kaca Masuk" min="0" oninput="toggleJumlahMasukKeluar()" class="field-pembelian">
         <input type="number" id="keluar" placeholder="Kaca Keluar" min="0" oninput="toggleJumlahMasukKeluar()" class="field-penjualan" style="display: none;" disabled>
         <button type="button" id="submitBtn" onclick="tambahData()">Tambah Data</button>
@@ -12938,7 +13040,7 @@ No. Kendaraan: ${noKendaraan}
   </div>
 
   <div class="footer">
-    <p>&copy; Rian v18.12.25 | PT.Hasta Harmonis | <a href="#">Privacy Policy</a></p>
+    <p>&copy; Rian v28.12.25 | PT.Hasta Harmonis | <a href="https://i.redd.it/2plmf8vh7ryf1.jpeg">Privacy Policy</a></p>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -12994,8 +13096,9 @@ No. Kendaraan: ${noKendaraan}
 
           request.onsuccess = () => {
             stokData = request.result || [];
-            window.stokData = stokData; // Make it globally accessible for tooltip
+            window.stokData = stokData; 
             console.log('Data loaded:', stokData.length, 'entries');
+            if (typeof updateKacaSuggestionsFromLogs === 'function') updateKacaSuggestionsFromLogs();
             resolve(stokData);
           };
 
@@ -13192,6 +13295,7 @@ No. Kendaraan: ${noKendaraan}
       updateNamaTokoList();
       updateJenisKacaList();
       updateUkuranKacaList();
+      if (typeof updateKacaSuggestionsFromLogs === 'function') updateKacaSuggestionsFromLogs();
       
       // Add Enter key functionality to form inputs
       setupEnterKeyNavigation();
@@ -13664,37 +13768,8 @@ No. Kendaraan: ${noKendaraan}
 
     // Helper: get all harga beli with sisa > 0 for given tebal+ukuran
     function getHargaBeliListWithStock(tebal, ukuran) {
-      const groupedData = {};
-      stokData.forEach((entry) => {
-        if (entry.tebal === tebal && entry.ukuran === ukuran) {
-          const hargaKey = entry.harga !== undefined && entry.harga > 0 ? entry.harga : 'noharga';
-          const key = `${entry.tebal}-${entry.ukuran}-${hargaKey}`;
-          
-          if (!groupedData[key]) {
-            groupedData[key] = { 
-              hargaMasuk: hargaKey !== 'noharga' ? entry.harga : undefined,
-              totalMasuk: 0, 
-              totalKeluar: 0, 
-              totalSisa: 0 
-            };
-          }
-
-          // Always set hargaMasuk from entry harga if available (prioritize masuk entries)
-          if (entry.harga !== undefined && entry.harga > 0) {
-            if (groupedData[key].hargaMasuk === undefined) {
-              // If not set yet, set it from any entry with harga
-              groupedData[key].hargaMasuk = entry.harga;
-            } else if (entry.masuk > 0) {
-              // If already set but this is a masuk entry, prefer this one (it's the purchase price)
-              groupedData[key].hargaMasuk = entry.harga;
-            }
-            // If hargaMasuk already set and this is not a masuk entry, keep the existing one
-          }
-
-          groupedData[key].totalMasuk += entry.masuk;
-          groupedData[key].totalKeluar += entry.keluar;
-          groupedData[key].totalSisa = groupedData[key].totalMasuk - groupedData[key].totalKeluar;
-        }
+      const groupedData = groupStokData(stokData, (entry) => {
+        return entry.tebal === tebal && entry.ukuran === ukuran;
       });
 
       // Get all available harga with stock
@@ -14634,53 +14709,15 @@ No. Kendaraan: ${noKendaraan}
     // Function to update Total Sisa per Jenis
     function updateTotalSisa() {
       const totalSisaTableBody = document.getElementById("jenisTable").getElementsByTagName('tbody')[0];
-      const groupedData = {};
-
-      // Group data by Tebal Kaca, Ukuran Kaca, dan Harga Beli (agar harga berbeda muncul sebagai baris baru)
-      stokData.forEach((entry) => {
-        const hargaKey = entry.harga !== undefined ? entry.harga : 'noharga';
-        const key = `${entry.tebal}-${entry.ukuran}-${hargaKey}`;
-
-        if (!groupedData[key]) {
-          groupedData[key] = { 
-            tebal: entry.tebal, 
-            ukuran: entry.ukuran, 
-            hargaMasuk: hargaKey !== 'noharga' ? entry.harga : undefined,
-            totalMasuk: 0, 
-            totalKeluar: 0, 
-            totalSisa: 0 
-          };
-        }
-
-        // Bila transaksi masuk dengan harga, simpan hargaMasuk khusus baris tersebut
-        if (entry.masuk > 0 && entry.harga !== undefined) {
-          groupedData[key].hargaMasuk = entry.harga;
-        }
-
-        groupedData[key].totalMasuk += entry.masuk;
-        groupedData[key].totalKeluar += entry.keluar;
-        groupedData[key].totalSisa = groupedData[key].totalMasuk - groupedData[key].totalKeluar;
-      });
+      
+      // Group data using helper
+      const groupedData = groupStokData(stokData);
 
       // Clear the table body
       totalSisaTableBody.innerHTML = "";
 
       // Convert groupedData to array and sort by jenis kaca (tebal) A-Z
-      const sortedData = Object.keys(groupedData).map(key => ({
-        key: key,
-        data: groupedData[key]
-      })).sort((a, b) => {
-        // Sort by jenis kaca (tebal) A-Z
-        const tebalA = (a.data.tebal || '').toUpperCase();
-        const tebalB = (b.data.tebal || '').toUpperCase();
-        if (tebalA !== tebalB) {
-          return tebalA.localeCompare(tebalB);
-        }
-        // If jenis kaca is the same, sort by ukuran A-Z
-        const ukuranA = (a.data.ukuran || '').toUpperCase();
-        const ukuranB = (b.data.ukuran || '').toUpperCase();
-        return ukuranA.localeCompare(ukuranB);
-      });
+      const sortedData = sortGroupedData(groupedData);
 
       // Insert sorted grouped data into the Total Sisa table
       sortedData.forEach(({ data }) => {
@@ -14875,50 +14912,11 @@ No. Kendaraan: ${noKendaraan}
           return;
         }
 
-        // Group data by Tebal Kaca, Ukuran Kaca, dan Harga Beli (same logic as updateTotalSisa)
-        const groupedData = {};
-        
-        dataSource.forEach((entry) => {
-          const hargaKey = entry.harga !== undefined ? entry.harga : 'noharga';
-          const key = `${entry.tebal}-${entry.ukuran}-${hargaKey}`;
-
-          if (!groupedData[key]) {
-            groupedData[key] = { 
-              tebal: entry.tebal, 
-              ukuran: entry.ukuran, 
-              hargaMasuk: hargaKey !== 'noharga' ? entry.harga : undefined,
-              totalMasuk: 0, 
-              totalKeluar: 0, 
-              totalSisa: 0 
-            };
-          }
-
-          // Bila transaksi masuk dengan harga, simpan hargaMasuk khusus baris tersebut
-          if (entry.masuk > 0 && entry.harga !== undefined) {
-            groupedData[key].hargaMasuk = entry.harga;
-          }
-
-          groupedData[key].totalMasuk += entry.masuk || 0;
-          groupedData[key].totalKeluar += entry.keluar || 0;
-          groupedData[key].totalSisa = groupedData[key].totalMasuk - groupedData[key].totalKeluar;
-        });
+        // Group data using helper
+        const groupedData = groupStokData(dataSource);
 
         // Convert groupedData to array and sort by jenis kaca (tebal) A-Z
-        const sortedData = Object.keys(groupedData).map(key => ({
-          key: key,
-          data: groupedData[key]
-        })).sort((a, b) => {
-          // Sort by jenis kaca (tebal) A-Z
-          const tebalA = (a.data.tebal || '').toUpperCase();
-          const tebalB = (b.data.tebal || '').toUpperCase();
-          if (tebalA !== tebalB) {
-            return tebalA.localeCompare(tebalB);
-          }
-          // If jenis kaca is the same, sort by ukuran A-Z
-          const ukuranA = (a.data.ukuran || '').toUpperCase();
-          const ukuranB = (b.data.ukuran || '').toUpperCase();
-          return ukuranA.localeCompare(ukuranB);
-        });
+        const sortedData = sortGroupedData(groupedData);
 
         // Prepare data for export
         const exportData = sortedData.map(({ data }) => ({
@@ -15242,1430 +15240,4 @@ No. Kendaraan: ${noKendaraan}
     document.getElementById('stokForm').style.display = 'flex';
     document.getElementById('totalSisaContainer').style.display = 'block';
   </script>
-<script>
-        // Quick print from header (uses current print settings, opens modal silently to generate data, then prints)
-        function handleQuickPrint() {
-            // Open modal to ensure latest data/layout prepared (hidden quickly)
-            const modal = document.getElementById('printModalOverlay');
-            const prevDisplay = modal.style.display;
-            modal.style.display = 'flex';
-            document.body.style.overflow = 'hidden';
-            try {
-                loadFontSizePreference();
-                loadFontWeightPreference();
-                loadFontFamilyPreference();
-                loadColumnSpacingFromStorage();
-                refreshPrintData();
-                // Small delay to allow DOM updates
-                setTimeout(() => {
-                    // Auto-save log before printing
-                    try { saveCurrentInputToLog(); } catch (e) { console.warn('Auto-save log failed:', e); }
-                    // Record transactions to stok
-                    // Force update all harga before recording transactions
-                    const allUkuranInputs = document.querySelectorAll('#kacaTableBody tr .ukuran');
-                    allUkuranInputs.forEach(ukuranInput => {
-                        if (ukuranInput.value.trim()) {
-                            // Trigger update by dispatching change event
-                            ukuranInput.dispatchEvent(new Event('change', { bubbles: true }));
-                        }
-                    });
-                    
-                    // Wait a bit longer to ensure all updates complete
-                    setTimeout(() => {
-                        try { recordStokTransactionsFromSuratJalan(); } catch (e) { console.warn('Record stok transactions failed:', e); }
-                        printNow();
-                        // Close modal after triggering print
-                        hidePrintModal();
-                    }, 150);
-                }, 50);
-            } catch (e) {
-                console.error('Quick print error:', e);
-                // Fallback: show modal so user can print manually
-                modal.style.display = 'flex';
-            } finally {
-                // Restore body overflow when modal hides via hidePrintModal
-            }
-        }
-        // Utilitas database toko bersama untuk autocomplete dan auto-fill
-        function buildTokoMapFromArray(arrayOfToko) {
-            const nameToAddress = {};
-            if (Array.isArray(arrayOfToko)) {
-                arrayOfToko.forEach(entry => {
-                    if (entry && entry.nama) {
-                        nameToAddress[entry.nama.toLowerCase()] = entry.alamat || '';
-                    }
-                });
-            }
-            return nameToAddress;
-        }
-
-        function getDatabaseToko() {
-            let map = {};
-            try {
-                const saved = storageManager.load('databaseToko');
-                if (saved && typeof saved === 'object') {
-                    map = saved;
-                }
-            } catch (_) {}
-            // Hanya gunakan data dari storage tanpa default bawaan
-            return map;
-        }
-
-        // Tidak lagi memaksa sync dari seed; gunakan storage manager
-        function persistDatabaseTokoFromLengkap() {
-            try {
-                const map = buildTokoMapFromArray(databaseTokoLengkap);
-                storageManager.save('databaseToko', map);
-            } catch (_) {}
-        }
-
-        // Fungsi untuk mengisi alamat otomatis berdasarkan nama toko
-        document.getElementById('namaToko').addEventListener('input', function() {
-            const rawInput = this.value || '';
-            const namaTokoLower = rawInput.toLowerCase();
-            const alamatField = document.getElementById('alamat');
-            const autocompleteDropdown = document.getElementById('autocompleteDropdown');
-            
-            // Tampilkan autocomplete jika ada input (case-insensitive, cari di nama/alamat)
-            if (namaTokoLower.length > 0) {
-                showAutocomplete(namaTokoLower);
-            } else {
-                hideAutocomplete();
-            }
-            
-            // Auto-fill alamat berdasarkan data dari localStorage (map nama->alamat)
-            const map = getDatabaseToko();
-            const addressFromMap = map[namaTokoLower];
-            if (addressFromMap) {
-                alamatField.value = addressFromMap;
-                alamatField.style.backgroundColor = '#f8f9fa';
-                autoResizeTextarea(alamatField);
-            } else {
-                alamatField.value = '';
-                alamatField.style.backgroundColor = '#fff';
-                alamatField.style.height = '80px';
-            }
-        });
-
-        // Fungsi untuk menampilkan popup daftar toko
-        function showTokoList() {
-            const popup = document.getElementById('popupOverlay');
-            const tokoList = document.getElementById('tokoList');
-            
-            // Generate daftar toko dari array yang tersimpan (di-load dari localStorage)
-            tokoList.innerHTML = '';
-            if (!Array.isArray(databaseTokoLengkap) || databaseTokoLengkap.length === 0) {
-                const empty = document.createElement('div');
-                empty.className = 'no-results';
-                empty.textContent = 'Belum ada toko yang tersedia';
-                tokoList.appendChild(empty);
-            } else {
-                databaseTokoLengkap.forEach((toko, index) => {
-                    const tokoItem = document.createElement('div');
-                    tokoItem.className = 'toko-item';
-                    tokoItem.innerHTML = `
-                        <div class="toko-nama">🏪 ${toko.nama}</div>
-                        <div class="toko-alamat">📍 ${toko.alamat}</div>
-                        <div class="action-buttons">
-                            <button class="btn-edit" onclick="editToko(${index})">✏️ Edit</button>
-                            <button class="btn-delete" onclick="deleteToko(${index})">🗑️ Hapus</button>
-                        </div>
-                    `;
-                    tokoList.appendChild(tokoItem);
-                });
-            }
-            
-            popup.style.display = 'flex';
-            document.body.style.overflow = 'hidden'; // Prevent scrolling
-        }
-
-        // Fungsi untuk menyembunyikan popup
-        function hideTokoList() {
-            const popup = document.getElementById('popupOverlay');
-            popup.style.display = 'none';
-            document.body.style.overflow = 'auto'; // Restore scrolling
-        }
-
-        // Close popup when clicking outside
-        document.getElementById('popupOverlay').addEventListener('click', function(e) {
-            if (e.target === this) {
-                hideTokoList();
-            }
-        });
-
-        // Close popup with Escape key
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                hideTokoList();
-                hideModal();
-                hideQuickAddModal();
-                hidePrintModal();
-            }
-            // Handle Ctrl+P or Cmd+P to trigger Print Sekarang
-            if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
-                e.preventDefault();
-                if (typeof handleQuickPrint === 'function') {
-                    handleQuickPrint();
-                }
-            }
-        });
-
-        // Refresh page helper
-        function refreshPage() {
-            try {
-                window.location.reload();
-            } catch (_) {
-                // Fallback: navigate to same URL
-                window.location.href = window.location.href;
-            }
-        }
-
-        // Fungsi untuk menampilkan modal tambah toko
-        function showAddModal() {
-            const modal = document.getElementById('modalOverlay');
-            const modalTitle = document.getElementById('modalTitle');
-            const saveBtn = document.getElementById('saveBtn');
-            const editIndex = document.getElementById('editIndex');
-            
-            modalTitle.textContent = '➕ Tambah Toko Baru';
-            saveBtn.textContent = 'Simpan';
-            editIndex.value = '';
-            
-            // Reset form
-            document.getElementById('modalNamaToko').value = '';
-            document.getElementById('modalAlamat').value = '';
-            
-            modal.style.display = 'flex';
-            document.body.style.overflow = 'hidden';
-        }
-
-        // Fungsi untuk menampilkan quick add modal
-        function showQuickAddModal() {
-            const modal = document.getElementById('quickAddModalOverlay');
-            
-            // Reset form
-            document.getElementById('quickAddNamaToko').value = '';
-            document.getElementById('quickAddAlamat').value = '';
-            
-            // Reset ke tab pertama
-            showQuickAddTab();
-            
-            modal.style.display = 'flex';
-            document.body.style.overflow = 'hidden';
-        }
-
-        // Fungsi untuk menampilkan tab tambah toko
-        function showQuickAddTab() {
-            const addTab = document.getElementById('quickAddTab');
-            const listTab = document.getElementById('quickListTab');
-            if (addTab) addTab.classList.add('active');
-            if (listTab) listTab.classList.remove('active');
-            // Update tab buttons safely tanpa bergantung pada event
-            const buttons = Array.from(document.querySelectorAll('.tab-btn'));
-            buttons.forEach(btn => btn.classList.remove('active'));
-            const addBtn = buttons.find(b => /Tambah Baru/i.test(b.textContent || ''));
-            if (addBtn) addBtn.classList.add('active');
-        }
-
-        // Fungsi untuk menampilkan tab daftar toko
-        function showQuickListTab() {
-            const addTab = document.getElementById('quickAddTab');
-            const listTab = document.getElementById('quickListTab');
-            if (addTab) addTab.classList.remove('active');
-            if (listTab) listTab.classList.add('active');
-            // Update tab buttons safely tanpa bergantung pada event
-            const buttons = Array.from(document.querySelectorAll('.tab-btn'));
-            buttons.forEach(btn => btn.classList.remove('active'));
-            const listBtn = buttons.find(b => /Lihat Daftar/i.test(b.textContent || ''));
-            if (listBtn) listBtn.classList.add('active');
-            // Generate daftar toko
-            generateQuickTokoList();
-        }
-
-        // Fungsi untuk menyembunyikan quick add modal
-        function hideQuickAddModal() {
-            const modal = document.getElementById('quickAddModalOverlay');
-            modal.style.display = 'none';
-            document.body.style.overflow = 'auto';
-        }
-
-        // Fungsi untuk menampilkan modal edit toko
-        function editToko(index) {
-            const modal = document.getElementById('modalOverlay');
-            const modalTitle = document.getElementById('modalTitle');
-            const saveBtn = document.getElementById('saveBtn');
-            const editIndex = document.getElementById('editIndex');
-            const toko = databaseTokoLengkap[index];
-            
-            modalTitle.textContent = '✏️ Edit Toko';
-            saveBtn.textContent = 'Update';
-            editIndex.value = index;
-            
-            // Isi form dengan data yang ada
-            document.getElementById('modalNamaToko').value = toko.nama;
-            document.getElementById('modalAlamat').value = toko.alamat;
-            
-            modal.style.display = 'flex';
-            document.body.style.overflow = 'hidden';
-        }
-
-        // Fungsi untuk menghapus toko
-        function deleteToko(index) {
-            if (confirm('Apakah Anda yakin ingin menghapus toko ini?')) {
-                databaseTokoLengkap.splice(index, 1);
-                // Sinkronkan database autocomplete dan daftar lengkap yang tersimpan
-                persistDatabaseTokoFromLengkap();
-                persistDatabaseTokoLengkapArray();
-                
-                // Refresh popup jika sedang terbuka
-                if (document.getElementById('popupOverlay').style.display === 'flex') {
-                    showTokoList();
-                }
-                // Refresh quick list tab jika sedang terbuka
-                const quickModal = document.getElementById('quickAddModalOverlay');
-                const quickListTab = document.getElementById('quickListTab');
-                if (quickModal && quickModal.style.display === 'flex' && quickListTab && quickListTab.classList.contains('active')) {
-                    generateQuickTokoList();
-                }
-
-                alert('Toko berhasil dihapus!');
-            }
-        }
-
-        // Fungsi untuk menyembunyikan modal
-        function hideModal() {
-            const modal = document.getElementById('modalOverlay');
-            modal.style.display = 'none';
-            document.body.style.overflow = 'auto';
-        }
-
-        // Handle form modal submission
-        document.getElementById('modalForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const namaToko = document.getElementById('modalNamaToko').value.trim();
-            const alamat = document.getElementById('modalAlamat').value.trim();
-            const editIndex = document.getElementById('editIndex').value;
-            
-            if (!namaToko || !alamat) {
-                alert('Mohon lengkapi semua field!');
-                return;
-            }
-            
-            if (editIndex === '') {
-                // Tambah toko baru
-                const newToko = {
-                    nama: namaToko,
-                    alamat: alamat
-                };
-                
-                databaseTokoLengkap.push(newToko);
-                // Sinkronkan database autocomplete dan daftar lengkap yang tersimpan
-                persistDatabaseTokoFromLengkap();
-                persistDatabaseTokoLengkapArray();
-                
-                alert('Toko berhasil ditambahkan!');
-            } else {
-                // Edit toko yang ada
-                const index = parseInt(editIndex);
-                const oldNama = databaseTokoLengkap[index].nama;
-                
-                // Update database lengkap
-                databaseTokoLengkap[index] = {
-                    nama: namaToko,
-                    alamat: alamat
-                };
-                // Sinkronkan database autocomplete dan daftar lengkap yang tersimpan
-                persistDatabaseTokoFromLengkap();
-                persistDatabaseTokoLengkapArray();
-                
-                alert('Toko berhasil diupdate!');
-            }
-            
-            hideModal();
-            
-            // Refresh popup jika sedang terbuka
-            if (document.getElementById('popupOverlay').style.display === 'flex') {
-                showTokoList();
-            }
-
-            // Refresh quick list tab jika sedang terbuka
-            const quickModal = document.getElementById('quickAddModalOverlay');
-            const quickListTab = document.getElementById('quickListTab');
-            if (quickModal && quickModal.style.display === 'flex' && quickListTab && quickListTab.classList.contains('active')) {
-                generateQuickTokoList();
-            }
-        });
-
-        // Close modal when clicking outside
-        document.getElementById('modalOverlay').addEventListener('click', function(e) {
-            if (e.target === this) {
-                hideModal();
-            }
-        });
-
-        // Close quick add modal when clicking outside
-        document.getElementById('quickAddModalOverlay').addEventListener('click', function(e) {
-            if (e.target === this) {
-                hideQuickAddModal();
-            }
-        });
-
-        // Handle quick add form submission
-        document.getElementById('quickAddForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            // Normalisasi: simpan Nama apa adanya (preserve case) untuk tampilan,
-            // namun lakukan pencarian/duplikasi dengan lower-case key
-            const namaInput = document.getElementById('quickAddNamaToko').value.trim();
-            const alamatInput = document.getElementById('quickAddAlamat').value.trim();
-            const namaKey = namaInput.toLowerCase();
-            
-            if (!namaInput || !alamatInput) {
-                alert('Mohon lengkapi semua field yang wajib diisi!');
-                return;
-            }
-            
-            // Tambah toko baru
-            const newToko = {
-                nama: namaInput,
-                alamat: alamatInput
-            };
-            
-            // Cek duplikasi berdasarkan lower-case key
-            const existingIndex = databaseTokoLengkap.findIndex(t => (t.nama || '').toLowerCase() === namaKey);
-            if (existingIndex >= 0) {
-                // Update yang lama untuk menjaga satu sumber truth
-                databaseTokoLengkap[existingIndex] = newToko;
-            } else {
-                databaseTokoLengkap.push(newToko);
-            }
-            // Sinkronkan database autocomplete dan daftar lengkap yang tersimpan
-            persistDatabaseTokoFromLengkap();
-            persistDatabaseTokoLengkapArray();
-            // Segarkan daftar cepat bila tab "Lihat Daftar" dibuka setelahnya
-            try { generateQuickTokoList(); } catch (_) {}
-            
-            // Auto-fill form utama
-            const alamatField = document.getElementById('alamat');
-            document.getElementById('namaToko').value = namaInput;
-            alamatField.value = alamatInput;
-            alamatField.style.backgroundColor = '#f8f9fa';
-            
-            // Auto-resize textarea
-            autoResizeTextarea(alamatField);
-            
-            alert('Toko berhasil ditambahkan dan form telah diisi otomatis!');
-            hideQuickAddModal();
-        });
-
-        // Fungsi untuk auto-resize textarea
-        function autoResizeTextarea(textarea) {
-            // Reset height untuk mendapatkan scrollHeight yang akurat
-            textarea.style.height = 'auto';
-            
-            // Set height berdasarkan konten
-            const newHeight = Math.max(80, textarea.scrollHeight);
-            textarea.style.height = newHeight + 'px';
-        }
-
-        // Fungsi untuk generate baris default tabel kaca
-        // Removed generateDefaultKacaRows (not used anymore)
-
-        // Fungsi untuk menambah baris baru
-        
-
-        // Fungsi untuk menghapus baris
-        
-
-        // Event listener untuk input changes
-        document.addEventListener('input', function(e) {
-            if (e.target.classList.contains('box') || e.target.classList.contains('lbr')) {
-                calculateTotalLbr(e.target);
-            }
-        });
-
-        // Event listener untuk blur (ketika input kehilangan focus)
-        document.addEventListener('blur', function(e) {
-            if (e.target.classList.contains('box')) {
-                autoAddBoxUnit(e.target);
-            } else if (e.target.classList.contains('lbr')) {
-                autoAddLbrUnit(e.target);
-            }
-        }, true);
-
-        // Event listener untuk keydown (ENTER key)
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                const target = e.target;
-                
-                // Auto-add unit jika user menekan ENTER pada input BOX atau LBR
-                if (target.classList.contains('box')) {
-                    autoAddBoxUnit(target);
-                } else if (target.classList.contains('lbr')) {
-                    autoAddLbrUnit(target);
-                }
-                
-                // Navigasi form dengan ENTER - hanya untuk form surat jalan (tokoForm)
-                // Cek apakah target berada di dalam form surat jalan
-                const tokoForm = target.closest('#tokoForm');
-                const stokForm = target.closest('#stokForm');
-                
-                // Skip jika target berada di form stok
-                if (stokForm) {
-                    return; // Let setupEnterKeyNavigation() handle it
-                }
-                
-                // Hanya proses jika target berada di form surat jalan
-                if (tokoForm) {
-                    if (target.id === 'namaToko') {
-                        e.preventDefault();
-                        const tanggalInput = tokoForm.querySelector('#tanggal');
-                        if (tanggalInput) tanggalInput.focus();
-                    } else if (target.id === 'tanggal' && tokoForm.contains(target)) {
-                        e.preventDefault();
-                        const nomorSJInput = tokoForm.querySelector('#nomorSJ');
-                        if (nomorSJInput) nomorSJInput.focus();
-                    } else if (target.id === 'nomorSJ') {
-                        e.preventDefault();
-                        const supirInput = tokoForm.querySelector('#supir');
-                        if (supirInput) supirInput.focus();
-                    } else if (target.id === 'supir') {
-                        e.preventDefault();
-                        const noKendaraanInput = tokoForm.querySelector('#noKendaraan');
-                        if (noKendaraanInput) noKendaraanInput.focus();
-                    } else if (target.id === 'noKendaraan') {
-                        e.preventDefault();
-                        // Focus ke input Jenis Kaca di baris pertama
-                        const firstJenisKacaInput = document.querySelector('input.jenis-kaca');
-                        if (firstJenisKacaInput) {
-                            firstJenisKacaInput.focus();
-                            firstJenisKacaInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        }
-                    }
-                }
-                // Note: Form stok navigation is handled by setupEnterKeyNavigation() function
-                // which is called separately and only handles fields in the stock form
-                // This prevents conflicts between form surat jalan and form stok
-                
-                // Cek apakah input berada di tabel kaca
-                if (target.closest('#kacaTable')) {
-                    const currentRow = target.closest('tr');
-                    const tbody = document.getElementById('kacaTableBody');
-                    const rows = tbody.querySelectorAll('tr');
-                    const isLastRow = currentRow === rows[rows.length - 1];
-                    
-                    // Navigasi antar kolom dalam tabel
-                    if (target.classList.contains('jenis-kaca')) {
-                        e.preventDefault();
-                        const nextInput = currentRow.querySelector('input.pwd');
-                        if (nextInput) nextInput.focus();
-                    } else if (target.classList.contains('pwd')) {
-                        e.preventDefault();
-                        const nextInput = currentRow.querySelector('input.no-do');
-                        if (nextInput) nextInput.focus();
-                    } else if (target.classList.contains('no-do')) {
-                        e.preventDefault();
-                        const nextInput = currentRow.querySelector('input.ukuran');
-                        if (nextInput) nextInput.focus();
-                    } else if (target.classList.contains('ukuran')) {
-                        e.preventDefault();
-                        const nextInput = currentRow.querySelector('input.harga-jual');
-                        if (nextInput) nextInput.focus();
-                    } else if (target.classList.contains('harga-jual')) {
-                        e.preventDefault();
-                        const nextInput = currentRow.querySelector('input.box');
-                        if (nextInput) nextInput.focus();
-                    } else if (target.classList.contains('box')) {
-                        e.preventDefault();
-                        const nextInput = currentRow.querySelector('input.lbr');
-                        if (nextInput) nextInput.focus();
-                    } else if (target.classList.contains('lbr')) {
-                        // Jika ini adalah baris terakhir dan semua field terisi
-                        if (isLastRow && isRowComplete(currentRow)) {
-                            e.preventDefault();
-                            
-                            // Visual feedback - highlight baris saat ini
-                            currentRow.style.backgroundColor = '#e8f5e8';
-                            setTimeout(() => {
-                                currentRow.style.backgroundColor = '';
-                            }, 300);
-                            
-                            addKacaRow();
-                            
-                            // Focus ke input Jenis Kaca di baris baru
-                            setTimeout(() => {
-                                const allRows = tbody.querySelectorAll('tr');
-                                const newRow = allRows[allRows.length - 1]; // Ambil baris terakhir (yang baru)
-                                const jenisKacaInput = newRow.querySelector('input.jenis-kaca');
-                                
-                                if (jenisKacaInput) {
-                                    jenisKacaInput.focus();
-                                    
-                                    // Tambahan: scroll ke input jika perlu
-                                    jenisKacaInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                } else {
-                                    // Fallback: coba focus ke input pertama
-                                    const firstInput = newRow.querySelector('input');
-                                    if (firstInput) {
-                                        firstInput.focus();
-                                    }
-                                }
-                            }, 200);
-                        } else {
-                            // Jika bukan baris terakhir, pindah ke baris berikutnya
-                            e.preventDefault();
-                            const nextRow = currentRow.nextElementSibling;
-                            if (nextRow) {
-                                const nextJenisKacaInput = nextRow.querySelector('input.jenis-kaca');
-                                if (nextJenisKacaInput) {
-                                    nextJenisKacaInput.focus();
-                                    nextJenisKacaInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        });
-
-        // Fungsi untuk mengecek apakah baris sudah terisi lengkap
-        function isRowComplete(row) {
-            const inputs = row.querySelectorAll('input:not([readonly])');
-            let filledCount = 0;
-            let totalInputs = 0;
-            
-            inputs.forEach(input => {
-                totalInputs++;
-                const value = input.value;
-                if (value && typeof value === 'string' && value.trim() !== '') {
-                    filledCount++;
-                }
-            });
-            
-            // Minimal 3 field harus terisi (jenis kaca, box, lbr)
-            // Atau jika user menekan ENTER pada field terakhir yang terisi
-            const currentInput = document.activeElement;
-            const isLastInput = currentInput === row.querySelector('input:last-of-type');
-            
-            return filledCount >= 3 || (filledCount >= 2 && isLastInput);
-        }
-
-        // Fungsi untuk otomatis menambahkan satuan BOX
-        function autoAddBoxUnit(input) {
-            const value = input.value.trim();
-            if (value && !value.toLowerCase().includes('box')) {
-                // Cek apakah input hanya berisi angka
-                const numberMatch = value.match(/^(\d+(?:\.\d+)?)$/);
-                if (numberMatch) {
-                    input.value = value + ' BOX';
-                    // Trigger calculation after adding unit
-                    calculateTotalLbr(input);
-                }
-            }
-        }
-
-        // Fungsi untuk otomatis menambahkan satuan LBR
-        function autoAddLbrUnit(input) {
-            const value = input.value.trim();
-            if (value && !value.toLowerCase().includes('lbr')) {
-                // Cek apakah input hanya berisi angka
-                const numberMatch = value.match(/^(\d+(?:\.\d+)?)$/);
-                if (numberMatch) {
-                    input.value = value + ' LBR';
-                    // Trigger calculation after adding unit
-                    calculateTotalLbr(input);
-                }
-            }
-        }
-
-        // Fungsi untuk generate daftar toko di quick modal
-        function generateQuickTokoList() {
-            const quickTokoList = document.getElementById('quickTokoList');
-            
-            if (databaseTokoLengkap.length === 0) {
-                quickTokoList.innerHTML = '<div class="no-results">Belum ada toko yang tersedia</div>';
-                return;
-            }
-            
-            let html = '';
-            databaseTokoLengkap.forEach((toko, index) => {
-                html += `
-                    <div class="quick-toko-item" onclick="selectQuickToko('${toko.nama}', '${toko.alamat.replace(/\n/g, '\\n')}')">
-                        <div class="quick-toko-name">🏪 ${toko.nama}</div>
-                        <div class="quick-toko-address">📍 ${toko.alamat}</div>
-                        <div class="quick-toko-actions">
-                            <button type="button" class="btn-edit" onclick="event.stopPropagation(); editToko(${index})">✏️ Edit</button>
-                            <button type="button" class="btn-delete" onclick="event.stopPropagation(); deleteToko(${index})">🗑️ Hapus</button>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            quickTokoList.innerHTML = html;
-        }
-
-        // Export daftar toko (databaseTokoLengkap) ke JSON yang bisa diunduh
-        function exportTokoListToJSON() {
-            try {
-                const data = Array.isArray(databaseTokoLengkap) ? databaseTokoLengkap : [];
-                const dataStr = JSON.stringify(data, null, 2);
-                const blob = new Blob([dataStr], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                const now = new Date();
-                const ts = now.toISOString().slice(0,19).replace(/[:T]/g,'-');
-                a.download = `daftar_toko_${ts}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            } catch (error) {
-                console.error('Gagal export daftar toko:', error);
-                alert('Gagal export daftar toko.');
-            }
-        }
-
-        // Import daftar toko dari file JSON
-        async function handleImportTokoListFile(event) {
-            try {
-                const file = event.target.files && event.target.files[0];
-                if (!file) return;
-                const text = await file.text();
-                let parsed;
-                try {
-                    parsed = JSON.parse(text);
-                } catch (e) {
-                    alert('File JSON tidak valid.');
-                    return;
-                }
-                if (!Array.isArray(parsed)) {
-                    alert('Format file tidak valid. Harus berupa array daftar toko.');
-                    return;
-                }
-                // Validasi minimal field
-                const sanitized = parsed.map(item => ({
-                    nama: String((item && (item.nama ?? item.Nama ?? item.name)) || '').trim(),
-                    alamat: String((item && (item.alamat ?? item.Alamat ?? item.address)) || '').trim()
-                })).filter(it => it.nama && it.alamat);
-                if (sanitized.length === 0) {
-                    alert('File tidak berisi data toko yang valid.');
-                    return;
-                }
-                // Gabungkan dengan data existing, hindari duplikat nama (case-insensitive)
-                const existingByLower = new Map(
-                    (Array.isArray(databaseTokoLengkap) ? databaseTokoLengkap : []).map(it => [String(it.nama || '').toLowerCase(), it])
-                );
-                sanitized.forEach(it => {
-                    const key = it.nama.toLowerCase();
-                    existingByLower.set(key, { nama: it.nama, alamat: it.alamat });
-                });
-                // Mutate the existing const array instead of reassigning
-                const merged = Array.from(existingByLower.values());
-                databaseTokoLengkap.splice(0, databaseTokoLengkap.length, ...merged);
-                // Persist ke localStorage
-                persistDatabaseTokoFromLengkap();
-                persistDatabaseTokoLengkapArray();
-                // Refresh UI jika tab daftar terbuka
-                const quickModal = document.getElementById('quickAddModalOverlay');
-                const quickListTab = document.getElementById('quickListTab');
-                if (quickModal && quickModal.style.display === 'flex' && quickListTab && quickListTab.classList.contains('active')) {
-                    generateQuickTokoList();
-                }
-                alert(`Import berhasil. Total toko: ${databaseTokoLengkap.length}`);
-                // Reset input untuk bisa import ulang
-                const input = document.getElementById('importTokoFileInput');
-                if (input) input.value = '';
-            } catch (error) {
-                console.error('Gagal import daftar toko:', error);
-                alert('Gagal import daftar toko. Pastikan file JSON valid.');
-            }
-        }
-
-        // Fungsi untuk memilih toko dari quick list
-        function selectQuickToko(namaToko, alamat) {
-            const alamatField = document.getElementById('alamat');
-            // Isi form utama
-            document.getElementById('namaToko').value = namaToko;
-            alamatField.value = alamat.replace(/\\n/g, '\n');
-            alamatField.style.backgroundColor = '#f8f9fa';
-            
-            // Auto-resize textarea
-            autoResizeTextarea(alamatField);
-            
-            // Tutup modal
-            hideQuickAddModal();
-            
-            // Tampilkan feedback
-            alert(`Form telah diisi dengan data ${namaToko}!`);
-        }
-
-        function getDisplayNameForKey(lowerKey) {
-            try {
-                const entry = Array.isArray(databaseTokoLengkap)
-                    ? databaseTokoLengkap.find(t => (t.nama || '').toLowerCase() === String(lowerKey || ''))
-                    : null;
-                if (entry && entry.nama) return entry.nama;
-            } catch (_) {}
-            // Fallback: Title Case dari lowerKey
-            return String(lowerKey || '').replace(/\b\w+/g, s => s.charAt(0).toUpperCase() + s.slice(1));
-        }
-
-        // Fungsi untuk menampilkan autocomplete
-        function showAutocomplete(searchTerm) {
-            const dropdown = document.getElementById('autocompleteDropdown');
-            const matches = [];
-            const map = getDatabaseToko();
-            // Cari toko yang cocok berdasarkan nama ATAU alamat (case-insensitive)
-            Object.keys(map).forEach(key => {
-                const nameLower = key;
-                const addressLower = String(map[key] || '').toLowerCase();
-                if (nameLower.includes(searchTerm) || addressLower.includes(searchTerm)) {
-                    matches.push({
-                        namaKey: key,
-                        displayName: getDisplayNameForKey(key),
-                        alamat: map[key]
-                    });
-                }
-            });
-            
-            // Generate HTML untuk dropdown
-            if (matches.length > 0) {
-                let html = '';
-                matches.forEach((toko, index) => {
-                    html += `
-                        <div class="autocomplete-item" data-index="${index}" onclick="selectToko('${toko.displayName.replace(/'/g, "&#39;")}', '${toko.alamat.replace(/\n/g, '\\n').replace(/'/g, "&#39;")}')">
-                            <div class="autocomplete-item-icon">🏪</div>
-                            <div class="autocomplete-item-text">
-                                <div class="autocomplete-item-name">${toko.displayName}</div>
-                                <div class="autocomplete-item-address">${toko.alamat.split('\n')[0]}...</div>
-                            </div>
-                        </div>
-                    `;
-                });
-                dropdown.innerHTML = html;
-                dropdown.style.display = 'block';
-            } else {
-                dropdown.innerHTML = '<div class="no-results">Tidak ada toko yang cocok</div>';
-                dropdown.style.display = 'block';
-            }
-        }
-
-        // Fungsi untuk menyembunyikan autocomplete
-        function hideAutocomplete() {
-            const dropdown = document.getElementById('autocompleteDropdown');
-            dropdown.style.display = 'none';
-        }
-
-        // Fungsi untuk memilih toko dari autocomplete
-        function selectToko(namaToko, alamat) {
-            const alamatField = document.getElementById('alamat');
-            document.getElementById('namaToko').value = namaToko;
-            alamatField.value = alamat.replace(/\\n/g, '\n');
-            alamatField.style.backgroundColor = '#f8f9fa';
-            // Auto-resize textarea
-            autoResizeTextarea(alamatField);
-            hideAutocomplete();
-        }
-
-        // Sembunyikan autocomplete saat klik di luar
-        document.addEventListener('click', function(e) {
-            const autocompleteContainer = document.querySelector('.autocomplete-container');
-            if (!autocompleteContainer.contains(e.target)) {
-                hideAutocomplete();
-            }
-        });
-
-        // Keyboard navigation untuk autocomplete
-        document.getElementById('namaToko').addEventListener('keydown', function(e) {
-            const dropdown = document.getElementById('autocompleteDropdown');
-            const items = dropdown.querySelectorAll('.autocomplete-item');
-            const selectedItem = dropdown.querySelector('.autocomplete-item.selected');
-            
-            if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                if (selectedItem) {
-                    selectedItem.classList.remove('selected');
-                    const nextItem = selectedItem.nextElementSibling;
-                    if (nextItem && nextItem.classList.contains('autocomplete-item')) {
-                        nextItem.classList.add('selected');
-                    } else {
-                        items[0]?.classList.add('selected');
-                    }
-                } else {
-                    items[0]?.classList.add('selected');
-                }
-            } else if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                if (selectedItem) {
-                    selectedItem.classList.remove('selected');
-                    const prevItem = selectedItem.previousElementSibling;
-                    if (prevItem && prevItem.classList.contains('autocomplete-item')) {
-                        prevItem.classList.add('selected');
-                    } else {
-                        items[items.length - 1]?.classList.add('selected');
-                    }
-                } else {
-                    items[items.length - 1]?.classList.add('selected');
-                }
-            } else if (e.key === 'Enter' && selectedItem) {
-                e.preventDefault();
-                selectedItem.click();
-            } else if (e.key === 'Escape') {
-                hideAutocomplete();
-            }
-        });
-
-        // Fungsi untuk toggle hide/unhide tombol
-        function toggleButtons() {
-            const mainActionsContainer = document.getElementById('mainActionsContainer');
-            const toggleBtn = document.querySelector('.toggle-buttons-btn');
-            const isHidden = mainActionsContainer.classList.contains('hidden');
-            
-            if (isHidden) {
-                // Tampilkan tombol
-                mainActionsContainer.classList.remove('hidden');
-                toggleBtn.innerHTML = '🔽 Sembunyikan Tombol';
-                toggleBtn.style.background = 'linear-gradient(135deg, #6f42c1 0%, #5a32a3 100%)';
-            } else {
-                // Sembunyikan tombol
-                mainActionsContainer.classList.add('hidden');
-                toggleBtn.innerHTML = '🔼 Tampilkan Tombol';
-                toggleBtn.style.background = 'linear-gradient(135deg, #28a745 0%, #20c997 100%)';
-            }
-        }
-
-        // Set state awal - tombol tersembunyi
-        window.addEventListener('load', function() {
-            try {
-                // Tombol tersembunyi secara default
-                const mainActionsContainer = document.getElementById('mainActionsContainer');
-                const toggleBtn = document.querySelector('.toggle-buttons-btn');
-                
-                if (mainActionsContainer && toggleBtn) {
-                    mainActionsContainer.classList.add('hidden');
-                    toggleBtn.innerHTML = '🔼 Tampilkan Tombol';
-                    toggleBtn.style.background = 'linear-gradient(135deg, #28a745 0%, #20c997 100%)';
-                }
-                
-                // Tambahkan 1 baris default jika belum ada
-                setTimeout(() => {
-                    const tbody = document.getElementById('kacaTableBody');
-                    if (tbody && tbody.children.length === 0) {
-                        addKacaRow();
-                    }
-                }, 200);
-                
-            } catch (error) {
-                console.error('Error during page initialization:', error);
-            }
-        });
-
-        // Backup initialization untuk memastikan glass data ter-load
-        document.addEventListener('DOMContentLoaded', function() {
-            try {
-                // Cek apakah glass data sudah ada, jika belum, tambahkan 1 baris default
-                setTimeout(() => {
-                    const kacaTableBody = document.getElementById('kacaTableBody');
-                    if (kacaTableBody && kacaTableBody.children.length === 0) {
-                        console.log('Glass data not found, adding one default row...');
-                        addKacaRow();
-                    }
-                }, 500);
-            } catch (error) {
-                console.error('Error during DOMContentLoaded:', error);
-            }
-        });
-
-        // Debug function untuk testing glass data
-        // Removed debugGlassData (not used anymore)
-
-        // Print Modal Functions
-        function adjustLayoutForSinglePage() {
-            const container = document.querySelector('.print-textarea-container');
-            const textElements = container.querySelectorAll('.draggable-text-item');
-            
-            if (textElements.length === 0) return;
-            
-            // F4 dimensions in pixels (matching container dimensions)
-            const a4Width = 813;
-            const a4Height = 1247;
-            const margin = 0; // 20px margin on each side
-            
-            // Calculate available space
-            const maxWidth = a4Width - (margin * 2);
-            const maxHeight = a4Height - (margin * 2);
-            
-            // Check if elements need adjustment (only if they're outside bounds or too close together)
-            let needsAdjustment = false;
-            let previousY = -1;
-            
-            textElements.forEach((element, index) => {
-                const currentX = parseInt(element.style.left) || 20;
-                const currentY = parseInt(element.style.top) || 20;
-                
-                // Check if element is outside F4 bounds
-                if (currentX < margin || currentX > maxWidth || currentY < margin || currentY > maxHeight) {
-                    needsAdjustment = true;
-                }
-                
-                // Check if elements are too close together (less than 30px spacing)
-                if (previousY !== -1 && Math.abs(currentY - previousY) < 30) {
-                    needsAdjustment = true;
-                }
-                
-                previousY = currentY;
-            });
-            
-            // Never auto-rearrange user positions; only log the state
-            console.log('No layout auto-adjustment applied; preserving user positions');
-        }
-
-        // Add event listeners for real-time column spacing updates
-        function addColumnSpacingEventListeners() {
-            const columnInputs = [
-                'colJenisKaca', 'colPwd', 'colNoDo', 'colUkuran', 'colBox', 'colLbr', 'colTotalLbr'
-            ];
-            
-            columnInputs.forEach(inputId => {
-                const input = document.getElementById(inputId);
-                if (input) {
-                    // Remove existing listeners to prevent duplicates
-                    input.removeEventListener('input', updateColumnSpacing);
-                    input.removeEventListener('change', updateColumnSpacing);
-                    
-                    // Add new listeners for real-time updates
-                    input.addEventListener('input', debounce(updateColumnSpacing, 300));
-                    input.addEventListener('change', updateColumnSpacing);
-                }
-            });
-        }
-
-        // Debounce function to prevent too many updates
-        function debounce(func, wait) {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-            };
-        }
-
-        // Update the showPrintModal function to add event listeners
-        function showPrintModal() {
-            const modal = document.getElementById('printModalOverlay');
-            modal.style.display = 'flex';
-            document.body.style.overflow = 'hidden';
-            
-            // Load font size preference
-            loadFontSizePreference();
-            loadFontWeightPreference();
-            loadFontFamilyPreference();
-            
-            // Load column spacing preference
-            loadColumnSpacingFromStorage();
-            
-            // Generate print data
-            refreshPrintData();
-            
-            // Add event listeners for column spacing
-            setTimeout(() => {
-                addColumnSpacingEventListeners();
-            }, 100);
-            
-            // Smart position handling: never auto-adjust; keep user positions as-is
-            setTimeout(() => {
-                if (Object.keys(savedPositions).length > 0) {
-                    preserveUserPositions();
-                }
-                initDragAndDropForElements();
-            }, 100);
-            
-            // Restore lock button state
-            const lockBtn = document.querySelector('.btn-lock-position');
-            if (lockBtn) {
-                if (positionsLocked) {
-                    lockBtn.textContent = '🔓 Unlock Posisi';
-                    lockBtn.classList.add('locked');
-                } else {
-                    lockBtn.textContent = '🔒 Lock Posisi';
-                    lockBtn.classList.remove('locked');
-                }
-            }
-        }
-
-        function hidePrintModal() {
-            const modal = document.getElementById('printModalOverlay');
-            modal.style.display = 'none';
-            document.body.style.overflow = 'auto';
-        }
-
-        function refreshPrintData() {
-            // Use the clean version that doesn't include headers
-            refreshPrintDataClean();
-        }
-
-        function validateAndAdjustForSinglePage() {
-            const container = document.querySelector('.print-textarea-container');
-            const textElements = container.querySelectorAll('.draggable-text-item');
-            
-            if (textElements.length === 0) return;
-            
-            // F4 dimensions in pixels (matching container dimensions)
-            const a4Width = 813;
-            const a4Height = 1247;
-            const margin = 0;
-            
-            let needsAdjustment = false;
-            let previousY = -1;
-            
-            // Check if any element is beyond F4 boundaries or too close together
-            textElements.forEach(element => {
-                const x = parseInt(element.style.left) || 0;
-                const y = parseInt(element.style.top) || 0;
-                
-                // Check if element is outside F4 bounds
-                if (x < margin || x > (a4Width - margin) || y < margin || y > (a4Height - margin)) {
-                    needsAdjustment = true;
-                }
-                
-                // Check if elements are too close together (less than 40px spacing)
-                if (previousY !== -1 && Math.abs(y - previousY) < 40) {
-                    needsAdjustment = true;
-                }
-                
-                previousY = y;
-            });
-            
-            // If adjustment is needed, apply single page layout
-            // Do not auto-adjust; trust user-defined positions
-            console.log('Validation step skipped auto-adjustments; preserving user positions');
-        }
-
-        function debugPositions() {
-            const container = document.querySelector('.print-textarea-container');
-            const textElements = container.querySelectorAll('.draggable-text-item');
-            
-            console.log('=== Position Debug ===');
-            console.log('Container dimensions:', {
-                width: container.offsetWidth,
-                height: container.offsetHeight,
-                scrollLeft: container.scrollLeft,
-                scrollTop: container.scrollTop
-            });
-            
-            textElements.forEach((element, index) => {
-                const x = parseInt(element.style.left) || 0;
-                const y = parseInt(element.style.top) || 0;
-                const text = element.querySelector('.text-content')?.textContent || '';
-                
-                console.log(`Element ${index}:`, {
-                    text: text.substring(0, 30) + '...',
-                    x: x,
-                    y: y,
-                    computedLeft: element.style.left,
-                    computedTop: element.style.top
-                });
-            });
-        }
-
-        function showPositionOverlay() {
-            const container = document.querySelector('.print-textarea-container');
-            const textElements = container.querySelectorAll('.draggable-text-item');
-            
-            // Remove existing overlay
-            const existingOverlay = document.querySelector('.position-overlay');
-            if (existingOverlay) {
-                existingOverlay.remove();
-            }
-            
-            // Create overlay
-            const overlay = document.createElement('div');
-            overlay.className = 'position-overlay';
-            overlay.style.cssText = `
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(255, 255, 0, 0.1);
-                pointer-events: none;
-                z-index: 9999;
-            `;
-            
-            textElements.forEach((element, index) => {
-                const x = parseInt(element.style.left) || 0;
-                const y = parseInt(element.style.top) || 0;
-                
-                const marker = document.createElement('div');
-                marker.style.cssText = `
-                    position: absolute;
-                    left: ${x}px;
-                    top: ${y}px;
-                    width: 10px;
-                    height: 10px;
-                    background: red;
-                    border-radius: 50%;
-                    z-index: 10000;
-                `;
-                marker.title = `Element ${index}: x=${x}, y=${y}`;
-                overlay.appendChild(marker);
-            });
-            
-            container.appendChild(overlay);
-            
-            // Remove overlay after 3 seconds
-            setTimeout(() => {
-                if (overlay.parentNode) {
-                    overlay.remove();
-                }
-            }, 3000);
-        }
-
-        function printNow() {
-            const container = document.querySelector('.print-textarea-container');
-            const textElements = container.querySelectorAll('.draggable-text-item');
-            
-            if (textElements.length === 0) {
-                alert('Tidak ada konten untuk dicetak!');
-                return;
-            }
-            
-            // Show position overlay for debugging
-            showPositionOverlay();
-            
-            // Capture positions BEFORE any adjustments
-            let positionedTexts = [];
-            textElements.forEach(element => {
-                const textContent = element.querySelector('.text-content');
-                if (textContent && textContent.textContent.trim()) {
-                    // Get exact pixel positions from the drag area
-                    const x = parseInt(element.style.left) || 0;
-                    const y = parseInt(element.style.top) || 0;
-                    const type = element.dataset.type || 'data';
-                    // Capture both raw text and the exact HTML preview for kaca-data
-                    const text = (type === 'kaca-data')
-                        ? (element.dataset.rawText || textContent.textContent)
-                        : textContent.textContent;
-                    const html = (type === 'kaca-data') ? textContent.innerHTML : null;
-                    
-                    positionedTexts.push({ x, y, text, type, html });
-                }
-            });
-            
-            // Debug positions before printing
-            debugPositions();
-            
-            // Create a new window for printing with positioned layout
-            const printWindow = window.open('', '_blank');
-            
-            // Sort by Y position first, then X position for consistent layout
-            positionedTexts.sort((a, b) => {
-                if (a.y !== b.y) return a.y - b.y;
-                return a.x - b.x;
-            });
-            
-            // Create HTML with positioned text elements using exact positions
-            let positionedHTML = '';
-            positionedTexts.forEach((item, index) => {
-                // Clamp to F4 canvas to prevent overflow triggering blank extra page
-                const pageWidth = 813;
-                const pageHeight = 1247;
-                const approxTextHeight = Math.max(currentFontSize, 10) + 8; // include ~8px vertical padding
-                const safeX = Math.max(0, Math.min(item.x, pageWidth - 1));
-                const safeY = Math.max(0, Math.min(item.y, pageHeight - approxTextHeight));
-                const style = `position: absolute; left: ${safeX}px; top: ${safeY}px;`;
-                let className = 'print-text-item';
-                
-                // Add styling based on type
-                if (item.type === 'header') {
-                    className += ' print-header';
-                } else if (item.type === 'total') {
-                    className += ' print-total';
-                } else if (item.type === 'kaca-data') {
-                    className += ' print-kaca-data';
-                } else if (item.type === 'timestamp') {
-                    className += ' print-timestamp';
-                }
-                
-                if (item.type === 'kaca-data') {
-                    // Use the exact preview HTML for perfect column alignment; fallback to rebuild
-                    const kdHTML = item.html || buildKacaDataFixedColumnsHTML(item.text, currentFontFamily, currentFontSize);
-                    positionedHTML += `<div class="${className}" style="${style}">${kdHTML}</div>`;
-                } else {
-                    positionedHTML += `<div class="${className}" style="${style}">${item.text}</div>`;
-                }
-                
-                // Debug: Log the exact position being used
-                console.log(`Print element ${index}:`, {
-                    text: item.text.substring(0, 30) + '...',
-                    x: safeX,
-                    y: safeY,
-                    style: style
-                });
-            });
-            
-            printWindow.document.write(`
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                    <link rel="preconnect" href="https://fonts.googleapis.com">
-                    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-                    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-                    <style>
-                        @page {
-                            size: 215mm 330mm; /* F4 */
-                            margin: 0;
-                        }
-                        html, body {
-                            margin: 0;
-                            padding: 0;
-                            font-family: ${currentFontFamily};
-                            font-size: ${currentFontSize}px;
-                            font-weight: ${currentFontWeight};
-                            line-height: 1.2;
-                            background: white;
-                            overflow: hidden;
-                        }
-                        html, body, * { box-sizing: border-box; }
-                        .page {
-                            position: fixed;
-                            top: 0;
-                            left: 0;
-                            width: 212mm;   /* more conservative to avoid overflow */
-                            height: 327mm;  /* more conservative to avoid overflow */
-                            overflow: clip;
-                            background: white;
-                            margin: 0;
-                            padding: 0;
-                        }
-                        .print-text-item { box-sizing: border-box; }
-                        .print-text-item {
-                            position: absolute;
-                            background: transparent;
-                            padding: 4px 8px;
-                            border: none;
-                            white-space: pre-wrap;
-                            max-width: none;
-                            font-family: ${currentFontFamily};
-                            font-size: ${currentFontSize}px;
-                            font-weight: ${currentFontWeight};
-                        }
-                        .print-header {
-                            font-weight: 700;
-                        }
-                        .print-total {
-                            font-weight: 700;
-                            color: #000 !important; /* force black for TOTAL */
-                            font-size: ${currentFontSize}px;
-                        }
-                        /* Mirror preview's fixed-columns layout exactly in print */
-                        .print-kaca-data { font-size: ${Math.max(currentFontSize - 2, 8)}px; max-width: 600px; width: auto; }
-                        .kd-block { display: block; }
-                        .kd-row { white-space: nowrap; line-height: 1.2; }
-                        .kd-cell { display:inline-block; font-family: 'Roboto Mono', 'Courier New', monospace; white-space: nowrap; overflow: hidden; text-overflow: clip; vertical-align: top; }
-                        .kd-cell.left{ text-align:left; } .kd-cell.center{ text-align:center; } .kd-cell.right{ text-align:right; }
-                        .kd-text{ display:inline; font-family:${currentFontFamily}; font-size:${currentFontSize}px; }
-                        .print-timestamp {
-                            font-weight: ${currentFontWeight};
-                        }
-        .print-timestamp {
-            font-weight: ${currentFontWeight};
-        }
-                        @media print {
-                            @page {
-                                size: 215mm 330mm; /* F4 */
-                                margin: 0;
-                            }
-                            html, body { 
-                                margin: 0; 
-                                padding: 0;
-                                overflow: hidden;
-                                font-size: ${currentFontSize}px;
-                                font-weight: ${currentFontWeight};
-                                font-family: ${currentFontFamily};
-                            }
-                            .page {
-                                width: 212mm;
-                                height: 327mm;
-                                position: fixed;
-                                top: 0;
-                                left: 0;
-                                overflow: clip;
-                                margin: 0;
-                                padding: 0;
-                            }
-                            .print-text-item {
-                                page-break-inside: avoid;
-                                page-break-before: avoid;
-                                page-break-after: avoid;
-                                font-family: ${currentFontFamily};
-                                font-size: ${currentFontSize}px;
-                                font-weight: ${currentFontWeight};
-                                /* Ensure no overflow from padding during print */
-                                padding: 0;
-                                max-width: 212mm;
-                            }
-                            .print-kaca-data { max-width: 600px !important; width: auto !important; }
-                            * {
-                                page-break-inside: avoid;
-                                page-break-after: avoid;
-                                page-break-before: avoid;
-                            }
-                            /* Hide browser headers and footers */
-                            html, body {
-                                -webkit-print-color-adjust: exact;
-                                print-color-adjust: exact;
-                            }
-                            /* Force single page */
-                            html {
-                                height: 100%;
-                                overflow: hidden;
-                            }
-                        }
-                    </style>
-                </head>
-                <body>
-                    <div class="page">${positionedHTML}</div>
-                </body>
-                </html>
-            `);
-            
-            printWindow.document.close();
-            
-            // Wait for content and web fonts to load before printing
-            printWindow.onload = function() {
-                try {
-                    const timeoutMs = 1500;
-                    let timedOut = false;
-                    const timeoutId = setTimeout(() => { timedOut = true; printWindow.print(); printWindow.close(); }, timeoutMs);
-                    const ready = (printWindow.document.fonts && printWindow.document.fonts.ready) ? printWindow.document.fonts.ready : Promise.resolve();
-                    ready.then(() => {
-                        if (!timedOut) {
-                            clearTimeout(timeoutId);
-                            // Slight delay ensures layout with loaded fonts
-                            setTimeout(() => { printWindow.print(); printWindow.close(); }, 50);
-                        }
-                    }).catch(() => {
-                        // Fallback if fonts API fails
-                        if (!timedOut) {
-                            clearTimeout(timeoutId);
-                            printWindow.print();
-                            printWindow.close();
-                        }
-                    });
-                } catch (_) {
-                    // Last resort
-                    printWindow.print();
-                    printWindow.close();
-                }
-            };
-        }
-
-    </script>
 </body></html>
