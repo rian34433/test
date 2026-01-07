@@ -15497,7 +15497,7 @@ No. Kendaraan: ${noKendaraan}
     // --- Google Apps Script Integration ---
 
     // KONFIGURASI: Masukkan URL Web App Google Apps Script Anda di sini
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx6GMJqYXHf0h61OzyqPruaHjY8MAsat7av6GUKezvAOLzyCffSHhAGh5lm6GuUpeX7EQ/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyefDcrisPwq9v7QjxgGbUEDXGjQEHKp6lyYlYaX4DgfwmkFcdgZwLOSuLI02R8neF_-Q/exec';
 
     // Function to get aggregated stock data for sync
     function getAggregatedStockData() {
@@ -15957,10 +15957,94 @@ No. Kendaraan: ${noKendaraan}
                         if (window.auth.canWrite()) {
                             setTimeout(() => { syncManager.syncAll(); }, 500);
                         } else {
-                            backendService.getStock().catch(() => {});
-                            backendService.getLogs().catch(() => {});
-                            backendService.getToko().catch(() => {});
-                            syncManager.updateStatus('Mode baca', 'success');
+                            const mapStockRow = (r) => ({
+                                id: r.ID,
+                                nama: r.NAMA,
+                                tanggal: r.TANGGAL,
+                                nota: r.NOTA,
+                                tebal: r.TEBAL,
+                                ukuran: r.UKURAN,
+                                harga: r.HARGA_BELI,
+                                hargaJual: r.HARGA_JUAL,
+                                masuk: Number(r.MASUK || 0),
+                                keluar: Number(r.KELUAR || 0),
+                                sisa: Number(r.SISA || 0)
+                            });
+                            try {
+                                const [stock, logs, toko] = await Promise.all([
+                                    backendService.getStock(),
+                                    backendService.getLogs(),
+                                    backendService.getToko()
+                                ]);
+                                if (Array.isArray(stock)) {
+                                    window.stokData = stock.map(mapStockRow);
+                                    if (typeof updateStokTable === 'function') {
+                                        updateStokTable();
+                                    }
+                                }
+                                if (Array.isArray(logs)) {
+                                    const parseList = (val) => String(val || '').split('\n').map(s => s.trim()).filter(Boolean);
+                                    const mappedLogs = logs.map(r => {
+                                        const jenisList = parseList(r.JENIS_KACA);
+                                        const ukuranList = parseList(r.UKURAN);
+                                        const hargaBeliList = parseList(r.HARGA_BELI);
+                                        const hargaJualList = parseList(r.HARGA_JUAL);
+                                        const boxList = parseList(r.BOX);
+                                        const lbrList = parseList(r.LBR);
+                                        const rows = [];
+                                        const maxLen = Math.max(jenisList.length, ukuranList.length, hargaBeliList.length, hargaJualList.length, boxList.length, lbrList.length);
+                                        for (let i = 0; i < maxLen; i++) {
+                                            rows.push({
+                                                jenisKaca: jenisList[i] || '',
+                                                ukuran: ukuranList[i] || '',
+                                                hargaBeli: hargaBeliList[i] || '',
+                                                hargaJual: hargaJualList[i] || '',
+                                                box: boxList[i] || '',
+                                                totalLbr: lbrList[i] || ''
+                                            });
+                                        }
+                                        return {
+                                            id: r.ID || Date.now(),
+                                            timestamp: r.TIMESTAMP || new Date().toISOString(),
+                                            data: {
+                                                namaToko: r.NAMA_TOKO || '',
+                                                alias: r.ALIAS || '',
+                                                alamat: r.ALAMAT || '',
+                                                tanggal: r.TANGGAL || '',
+                                                nomorSJ: r.NO_SJ || '',
+                                                supir: r.SUPIR || '',
+                                                noKendaraan: r.NO_KENDARAAN || '',
+                                                kacaData: {
+                                                    rows,
+                                                    footer: {
+                                                        grandTotal: r.GRAND_TOTAL || '',
+                                                        cont: r.CONT || '',
+                                                        seal: r.SEAL || ''
+                                                    }
+                                                }
+                                            }
+                                        };
+                                    });
+                                    window.inputLogHistory = mappedLogs;
+                                    if (typeof renderInputLog === 'function') {
+                                        renderInputLog();
+                                    }
+                                }
+                                if (Array.isArray(toko)) {
+                                    const remoteToko = toko.map(it => ({ nama: it.NAMA || it.nama || '', alamat: it.ALAMAT || it.alamat || '' }));
+                                    if (Array.isArray(window.databaseTokoLengkap)) {
+                                        const byKey = new Map(window.databaseTokoLengkap.map(t => [String((t.nama||'').toLowerCase()), t]));
+                                        remoteToko.forEach(t => {
+                                            const key = String((t.nama||'').toLowerCase());
+                                            if (!byKey.has(key)) byKey.set(key, t);
+                                        });
+                                        window.databaseTokoLengkap.splice(0, window.databaseTokoLengkap.length, ...Array.from(byKey.values()));
+                                    }
+                                }
+                                syncManager.updateStatus('Mode baca', 'success');
+                            } catch (_) {
+                                syncManager.updateStatus('Mode baca', 'success');
+                            }
                         }
                     } catch (err) {
                         errorEl.textContent = err && err.message ? err.message : 'Username atau password salah';
