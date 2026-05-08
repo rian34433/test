@@ -4366,8 +4366,9 @@
         <div class="header">
             <h1>SURAT JALAN</h1>
             <div class="header-controls">
-                <button id="backupBtn" class="header-btn" title="Backup Data">💾 Backup</button>
-                <button id="restoreBtn" class="header-btn" title="Restore Data">📁 Restore</button>
+                <button id="pullServerBtn" class="header-btn" title="Ambil Data dari Server" style="background: #4a90e2;">☁️ Ambil Server</button>
+                <button id="backupBtn" class="header-btn" title="Backup ke File JSON">💾 Backup</button>
+                <button id="restoreBtn" class="header-btn" title="Restore dari File JSON">📁 Restore</button>
                 <input type="file" id="restoreFile" accept=".json" style="display: none;">
             </div>
         </div>
@@ -5962,10 +5963,33 @@ No. Kendaraan: ${noKendaraan}
         
         // Backup and Restore functionality
         document.addEventListener('DOMContentLoaded', function() {
+            const pullServerBtn = document.getElementById('pullServerBtn');
             const backupBtn = document.getElementById('backupBtn');
             const restoreBtn = document.getElementById('restoreBtn');
             const restoreFile = document.getElementById('restoreFile');
             
+            if (pullServerBtn) {
+                pullServerBtn.addEventListener('click', async function() {
+                    if (confirm('Ambil data terbaru dari server? Data lokal yang belum disinkronkan mungkin akan tertimpa.')) {
+                        const overlay = document.getElementById('initialLoadingOverlay');
+                        if (overlay) {
+                            overlay.classList.remove('hidden');
+                            const loaderText = overlay.querySelector('.loader-text');
+                            if (loaderText) loaderText.textContent = 'Mengambil data dari server...';
+                        }
+                        
+                        try {
+                            await window.syncManager.pullFromServer();
+                            alert('✅ Data berhasil diperbarui dari server');
+                        } catch (error) {
+                            alert('❌ Gagal mengambil data: ' + error.message);
+                        } finally {
+                            if (overlay) overlay.classList.add('hidden');
+                        }
+                    }
+                });
+            }
+
             if (backupBtn) {
                 backupBtn.addEventListener('click', async function() {
                     try {
@@ -6021,17 +6045,26 @@ No. Kendaraan: ${noKendaraan}
 
         // Database toko lengkap dikelola via localStorage (tanpa seed bawaan)
         const databaseTokoLengkap = [];
-        // Load dari storage dengan fallback
-        (function loadDatabaseTokoLengkapFromStorage(){
+        
+        // Fungsi untuk me-load data toko dari storage ke array global
+        function loadDatabaseTokoLengkapFromStorage() {
             try {
                 const saved = storageManager.load('databaseTokoLengkap');
-                if (Array.isArray(saved) && saved.length > 0) {
+                if (Array.isArray(saved)) {
                     databaseTokoLengkap.splice(0, databaseTokoLengkap.length, ...saved);
-                    // Sinkronkan map autocomplete dari data yang di-load agar tanpa default bawaan
-                    try { persistDatabaseTokoFromLengkap(); } catch (_) {}
+                    // Sinkronkan map autocomplete dari data yang di-load
+                    if (typeof persistDatabaseTokoFromLengkap === 'function') {
+                        persistDatabaseTokoFromLengkap();
+                    }
+                    console.log('✅ Global databaseTokoLengkap updated:', databaseTokoLengkap.length, 'entries');
                 }
-            } catch (_) {}
-        })();
+            } catch (e) {
+                console.warn('⚠️ Failed to load databaseTokoLengkap from storage:', e);
+            }
+        }
+
+        // Load awal saat startup
+        loadDatabaseTokoLengkapFromStorage();
 
         function persistDatabaseTokoLengkapArray() {
             storageManager.save('databaseTokoLengkap', databaseTokoLengkap);
@@ -16212,6 +16245,12 @@ No. Kendaraan: ${noKendaraan}
 
         triggerUIUpdates() {
             console.log('🎨 Triggering UI updates...');
+            
+            // Reload global array from localStorage first
+            if (typeof loadDatabaseTokoLengkapFromStorage === 'function') {
+                loadDatabaseTokoLengkapFromStorage();
+            }
+
             if (typeof updateStokTable === 'function') updateStokTable();
             if (typeof updateLogTable === 'function') updateLogTable();
             if (typeof renderInputLog === 'function') renderInputLog();
