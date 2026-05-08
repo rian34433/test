@@ -91,6 +91,29 @@
         .sync-container:hover {
             background: rgba(255, 255, 255, 0.25);
         }
+
+        .btn-sync-manual {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-right: 5px;
+        }
+
+        .btn-sync-manual:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        .btn-sync-manual i {
+            font-size: 12px;
+        }
         
         #syncStatus {
             margin-left: 8px;
@@ -5808,6 +5831,12 @@ No. Kendaraan: ${noKendaraan}
                                         window.updateTotalSisa();
                                     } else if (typeof updateTotalSisa === 'function') {
                                         updateTotalSisa();
+                                    }
+                                    
+                                    if (typeof window.updateNamaTokoList === 'function') {
+                                        window.updateNamaTokoList();
+                                    } else if (typeof updateNamaTokoList === 'function') {
+                                        updateNamaTokoList();
                                     }
                                     
                                     console.log('✅ Riwayat stok imported successfully:', data.stokData.length, 'entries');
@@ -16111,18 +16140,20 @@ No. Kendaraan: ${noKendaraan}
 
         async pullFromServer() {
             if (!this.backend.url || this.backend.url.includes('GANTI_DENGAN')) {
-                // Sembunyikan overlay jika backend tidak dikonfigurasi
                 const overlay = document.getElementById('initialLoadingOverlay');
                 if (overlay) overlay.classList.add('hidden');
                 return;
             }
             try {
+                console.log('🔄 Attempting to pull data from:', this.backend.url);
                 this.updateStatus('Mengambil data dari server...', 'syncing');
+                
                 const db = await this.backend.getAll();
+                console.log('📡 Response from server:', db ? 'Data received' : 'No data');
+                
                 if (db) {
-                    console.log('📥 Data pulled from server');
+                    console.log('📥 Data structure keys:', Object.keys(db));
                     
-                    // CEK: Jangan menimpa data lokal jika server kosong tapi lokal ada isinya
                     const manager = window.storageManager || (typeof storageManager !== 'undefined' ? storageManager : null);
                     if (manager) {
                         // Cek data lokal dulu
@@ -16130,21 +16161,25 @@ No. Kendaraan: ${noKendaraan}
                         const localData = JSON.parse(localJson);
                         
                         const serverHasData = (db.stokData && db.stokData.length > 0) || 
-                                            (db.inputLogHistory && db.inputLogHistory.length > 0);
+                                            (db.inputLogHistory && db.inputLogHistory.length > 0) ||
+                                            (db.databaseTokoLengkap && db.databaseTokoLengkap.length > 0);
+                        
                         const localHasData = (localData.stokData && localData.stokData.length > 0) || 
                                            (localData.inputLogHistory && localData.inputLogHistory.length > 0);
                         
+                        console.log('📊 Stats - Server has data:', serverHasData, '| Local has data:', localHasData);
+
                         if (!serverHasData && localHasData) {
                             console.log('⚠️ Server data is empty, preserving local data');
                             this.updateStatus('Data server kosong, menggunakan data lokal', 'success');
                             setTimeout(() => this.updateStatus('Online', 'online'), 2000);
                             
-                            // Sembunyikan overlay karena kita sudah memutuskan pakai data lokal
                             const overlay = document.getElementById('initialLoadingOverlay');
                             if (overlay) overlay.classList.add('hidden');
-                            return; // Stop pulling, let syncAll push later
+                            return;
                         }
 
+                        console.log('💾 Importing data to local storage...');
                         const success = await manager.importData(JSON.stringify(db));
                         if (success) {
                             console.log('✅ All data restored from server');
@@ -16155,23 +16190,37 @@ No. Kendaraan: ${noKendaraan}
                     setTimeout(() => this.updateStatus('Online', 'online'), 2000);
                     
                     // Trigger UI updates
-                    if (typeof updateStokTable === 'function') updateStokTable();
-                    if (typeof updateLogTable === 'function') updateLogTable();
-                    if (typeof renderInputLog === 'function') renderInputLog();
-                    if (typeof updateDaftarTokoTable === 'function') updateDaftarTokoTable();
-                    if (typeof updateNamaTokoList === 'function') updateNamaTokoList();
-                    if (typeof updateJenisKacaList === 'function') updateJenisKacaList();
-                    if (typeof updateUkuranKacaList === 'function') updateUkuranKacaList();
-                    if (typeof refreshNomorSJWarningNow === 'function') refreshNomorSJWarningNow();
+                    this.triggerUIUpdates();
+                } else {
+                    console.warn('⚠️ Server returned empty data');
+                    this.updateStatus('Server tidak mengirim data', 'error');
                 }
             } catch (e) {
-                console.error('Remote pull failed:', e);
-                this.updateStatus('Gagal mengambil data server', 'error');
+                console.error('❌ Remote pull failed:', e);
+                this.updateStatus(`Gagal ambil data: ${e.message}`, 'error');
+                // Tampilkan pesan error di overlay jika masih muncul
+                const loaderText = document.querySelector('#initialLoadingOverlay .loader-text');
+                if (loaderText) loaderText.innerHTML = `<span style="color: #ff6b6b">Gagal: ${e.message}</span><br><small>Pastikan server PHP aktif</small>`;
             } finally {
-                // SELALU sembunyikan overlay setelah pull selesai (berhasil atau gagal)
                 const overlay = document.getElementById('initialLoadingOverlay');
-                if (overlay) overlay.classList.add('hidden');
+                if (overlay) {
+                    // Beri waktu sebentar agar user bisa baca status terakhir
+                    setTimeout(() => overlay.classList.add('hidden'), 1000);
+                }
             }
+        }
+
+        triggerUIUpdates() {
+            console.log('🎨 Triggering UI updates...');
+            if (typeof updateStokTable === 'function') updateStokTable();
+            if (typeof updateLogTable === 'function') updateLogTable();
+            if (typeof renderInputLog === 'function') renderInputLog();
+            if (typeof updateDaftarTokoTable === 'function') updateDaftarTokoTable();
+            if (typeof updateNamaTokoList === 'function') updateNamaTokoList();
+            if (typeof updateJenisKacaList === 'function') updateJenisKacaList();
+            if (typeof updateUkuranKacaList === 'function') updateUkuranKacaList();
+            if (typeof refreshNomorSJWarningNow === 'function') refreshNomorSJWarningNow();
+            if (typeof updateTotalSisa === 'function') updateTotalSisa();
         }
 
         async syncAll() {
@@ -16265,7 +16314,16 @@ No. Kendaraan: ${noKendaraan}
             status.id = 'syncStatus';
             status.textContent = 'Menunggu sinkronisasi...';
             
-            syncContainer.appendChild(status);
+            // Tambahkan tombol sinkronisasi manual
+            const syncBtn = document.createElement('button');
+            syncBtn.className = 'btn-sync-manual';
+            syncBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+            syncBtn.title = 'Sinkronisasi dengan server';
+            syncBtn.onclick = async () => {
+                await syncManager.pullFromServer();
+                await syncManager.syncAll();
+            };
+            syncContainer.appendChild(syncBtn);
             
             // Insert at the beginning of header (left side)
             if (header.firstChild) {

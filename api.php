@@ -12,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 function readDB($file) {
-    if (!file_exists($file)) {
+    if (!file_exists($file) || filesize($file) === 0) {
         return [
             "stokData" => [],
             "inputLogHistory" => [],
@@ -21,7 +21,21 @@ function readDB($file) {
         ];
     }
     $json = file_get_contents($file);
-    return json_decode($json, true);
+    if (empty($json)) {
+        return [
+            "stokData" => [],
+            "inputLogHistory" => [],
+            "databaseTokoLengkap" => [],
+            "databaseToko" => (object)[]
+        ];
+    }
+    $data = json_decode($json, true);
+    return is_array($data) ? $data : [
+        "stokData" => [],
+        "inputLogHistory" => [],
+        "databaseTokoLengkap" => [],
+        "databaseToko" => (object)[]
+    ];
 }
 
 function writeDB($file, $data) {
